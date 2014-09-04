@@ -29,6 +29,23 @@ T MinHeap<T>::pop() {
 
 template <typename T>
 void MinHeap<T>::heapify(const size_t &index) {
+    size_t leftIndex = this->getLeftChildIndex(index);
+    size_t rightIndex = this->getRightChildIndex(index);
+    if (leftIndex >= this->heap.size() || rightIndex >= this->heap.size()) {
+        return;
+    }
+
+    T val = this->heap[index];
+
+    if (this->heap[leftIndex] <= this->heap[rightIndex]) {
+        this->heap[index] = this->heap[leftIndex];
+        this->heap[leftIndex] = val;
+        heapify(leftIndex);
+    } else {
+        this->heap[index] = this->heap[rightIndex];
+        this->heap[rightIndex] = val;
+        heapify(rightIndex);
+    }
 }
 
 // List all Kernels used here.

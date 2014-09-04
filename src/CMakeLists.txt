@@ -1,6 +1,4 @@
 set(SOURCES
-    heap
-    min_heap
 )
 
 include_directories(${INCLUDE_DIRS})

@@ -9,14 +9,24 @@ TEST(MinHeapTest, InitiallyEmpty) {
     ASSERT_EQ(true, heap.empty());
 }
 
-TEST(MinHeapTest, PeekReturnsNullWhenEmpty) {
+TEST(MinHeapTest, PeekThrowsWhenEmpty) {
     MinHeap<int> heap;
-    ASSERT_EQ(NULL, heap.peek());
+    try {
+        heap.peek();
+        FAIL();
+    } catch (std::logic_error &e) {
+        SUCCEED();
+    }
 }
 
-TEST(MinHeapTest, PopReturnsNullWhenEmpty) {
+TEST(MinHeapTest, PopThrowsWhenEmpty) {
     MinHeap<int> heap;
-    ASSERT_EQ(NULL, heap.pop());
+    try {
+        heap.pop();
+        FAIL();
+    } catch (std::logic_error &e) {
+        SUCCEED();
+    }
 }
 
 TEST(MinHeapTest, NotEmptyAfterInsert) {
@@ -125,18 +135,25 @@ TEST(MinHeapTest, SimpleUse2) {
 TEST(MinHeapFuzzer, RandomFuzz) {
     MinHeap<int> heap;
     srand(time(NULL));
-    for (size_t i = 0; i < 10000000; i++) {
+    for (size_t i = 0; i < 1000000; i++) {
         float p = (double)rand()/RAND_MAX;
         if (p < 0.8) {
             heap.insert(1);
         } else {
-            int val = heap.pop();
-            if (val == NULL) {
+            try {
+                heap.pop();
+            } catch(std::logic_error &e) {
                 ASSERT_EQ(true, heap.empty());
             }
         }
     }
-    while (heap.pop());
+    while (true) {
+        try {
+            heap.pop();
+        } catch(std::logic_error &e) {
+            break;
+        }
+    }
     ASSERT_EQ(true, heap.empty());
 }
 

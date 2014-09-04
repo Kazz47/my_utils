@@ -45,7 +45,7 @@ set(INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/include
 )
 
-add_subdirectory(src)
+#add_subdirectory(src)
 
 # Sources
 add_subdirectory(libs)

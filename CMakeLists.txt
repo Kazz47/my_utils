@@ -32,6 +32,10 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
+# Find Packages
+find_package(Glog REQUIRED)
+find_package(OpenCV)
+
 # Build Settings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++0x -fPIC -Wall")
@@ -45,7 +49,7 @@ set(INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/include
 )
 
-#add_subdirectory(src)
+add_subdirectory(src)
 
 # Sources
 add_subdirectory(libs)

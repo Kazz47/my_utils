@@ -1,12 +1,10 @@
 set(SOURCES
+    video_splitter
 )
 
-include_directories(${INCLUDE_DIRS})
+include_directories(${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS})
 
-# add_library(slog OBJECT ${SOURCES})
-# add_library(slog_static STATIC $<TARGET_OBJECTS:soundex>)
-# add_library(slog_shared SHARED $<TARGET_OBJECTS:soundex>)
+add_executable(video_splitter ${SOURCES})
 
-add_library(heap_static STATIC ${SOURCES})
-add_library(heap_shared SHARED ${SOURCES})
+target_link_libraries(video_splitter ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 

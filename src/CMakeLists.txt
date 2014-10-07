@@ -10,7 +10,7 @@ set(SPLITTER_SOURCES
     video_splitter
 )
 
-set(BSUB_SOURCES
+set(BSUB_TEST_SOURCES
     background_subtract
 )
 
@@ -23,7 +23,7 @@ add_library(bsub_static STATIC ${BSUB_SOURCES})
 add_library(bsub_shared SHARED ${BSUB_SOURCES})
 
 add_executable(video_splitter ${SPLITTER_SOURCES})
-add_executable(background_subtract ${BSUB_SOURCES})
+add_executable(background_subtract ${BSUB_TEST_SOURCES})
 
 target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(background_subtract bsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})

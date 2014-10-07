@@ -1,4 +1,4 @@
-include_directories(${GTEST_INCLUDE_DIRS} ${INCLUDE_DIRS})
+include_directories(${GTEST_INCLUDE_DIRS} ${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS})
 
 # Testing Parameters
 # set(GTEST_SHUFFLE 1) # Shuffle test execution order
@@ -6,6 +6,7 @@ include_directories(${GTEST_INCLUDE_DIRS} ${INCLUDE_DIRS})
 
 set(test_sources
     min_heap_test
+    bsub_test
 )
 
 add_executable(tests ${test_sources})
@@ -14,9 +15,12 @@ add_executable(tests ${test_sources})
 add_dependencies(tests googletest)
 
 target_link_libraries(tests
+    pthread
     ${GTEST_LIBS_DIR}/libgtest.a
     ${GTEST_LIBS_DIR}/libgtest_main.a
-    pthread
+    ${GLOG_LIBRARIES}
+    ${OpenCV_LIBS}
+    bsub_shared
 )
 
 # Run the Tests

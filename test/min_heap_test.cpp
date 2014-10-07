@@ -132,7 +132,7 @@ TEST(MinHeapTest, SimpleUse2) {
     ASSERT_EQ(true, heap.empty());
 }
 
-TEST(MinHeapFuzzer, RandomFuzz) {
+TEST(MinHeapFuzzer, DISABLED_RandomFuzz) {
     MinHeap<int> heap;
     srand(time(NULL));
     for (size_t i = 0; i < 1000000; i++) {

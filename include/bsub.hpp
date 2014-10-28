@@ -16,7 +16,10 @@ public:
     void getBackgroundImage(cv::OutputArray backgroundImage) const;
 
 private:
-    cv::Mat *background;
+    static constexpr double LEARNING_RATE = 0.1;
+    cv::Mat *model;
+
+    void updateModel(const cv::Mat &dist, const double &rate);
 };
 
 #endif //BSUB_H

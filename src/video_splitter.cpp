@@ -5,7 +5,7 @@
 
 #include "vcrop.cpp"
 
-#define VISUAL
+//#define VISUAL
 
 // Name of the main program window
 static const std::string W_NAME = "WINDOW";
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     float y_val = atof(argv[3]);
     float size_val = atof(argv[4]);
 
-    LOG(INFO) << "Opening video: '" << filename << "'";
+    LOG(INFO) << "Cropping video: '" << filename << "'";
     cv::VideoCapture capture(filename);
     cv::Mat frame;
 

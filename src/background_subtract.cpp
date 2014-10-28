@@ -9,6 +9,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+//Logging
+#include <glog/logging.h>
 //My Libs
 #include "bsub.hpp"
 
@@ -57,6 +59,8 @@ void help()
  */
 int main(int argc, char* argv[])
 {
+    FLAGS_logtostderr = 1;
+    google::InitGoogleLogging(argv[0]);
     //print help information
     help();
 

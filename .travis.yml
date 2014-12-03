@@ -9,6 +9,7 @@ compiler:
  - gcc
 
 before_script:
+#OpenCV
  - git clone https://github.com/Itseez/opencv.git
  - cd opencv
  - git checkout 2.4
@@ -18,6 +19,14 @@ before_script:
  - make -j4
  - sudo make -j4 install
  - cd ../..
+#Google Log
+ - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog
+ - cd glog
+ - ./configure
+ - make -j4
+ - sudo make -j4 install
+ - cd ..
+#Main Program
  - mkdir build
  - cd build
  - cmake ..

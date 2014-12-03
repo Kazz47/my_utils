@@ -40,8 +40,8 @@ TEST_F(BSubTest, DISABLED_FirstBackgroundIsFirstInput) {
 
     ASSERT_EQ(input_image.rows, output_image.rows);
     ASSERT_EQ(input_image.cols, output_image.cols);
-    for (size_t r = 0; r < input_image.rows; r++) {
-        for (size_t c = 0; c < input_image.cols; c++) {
+    for (int r = 0; r < input_image.rows; r++) {
+        for (int c = 0; c < input_image.cols; c++) {
             ASSERT_EQ(input_image.at<unsigned char>(r, c), output_image.at<unsigned char>(r, c));
         }
     }
@@ -53,7 +53,7 @@ TEST_F(BSubTest, DISABLED_TestApply) {
     cv::Mat input_image = cv::Mat::ones(10, 10, CV_8U);
     cv::Mat output_image;
     subtractor->apply(input_image, output_image);
-    ASSERT_EQ(false, output_image.empty());
+    ASSERT_FALSE(output_image.empty());
     delete subtractor;
 }
 
@@ -62,7 +62,7 @@ TEST_F(BSubTest, DISABLED_TestOperator) {
     cv::Mat input_image = cv::Mat::ones(10, 10, CV_8U);
     cv::Mat output_image;
     subtractor->operator()(input_image, output_image);
-    ASSERT_EQ(false, output_image.empty());
+    ASSERT_FALSE(output_image.empty());
     delete subtractor;
 }
 

@@ -34,8 +34,8 @@ endif(DOXYGEN_FOUND)
 
 # Find Packages
 find_package(Glog REQUIRED)
-find_package(OpenCV REQUIRED COMPONENTS core videostab)
-#find_package(OpenCV REQUIRED)
+#find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
+find_package(OpenCV REQUIRED)
 
 # Build Settings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC")

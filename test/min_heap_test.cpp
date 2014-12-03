@@ -32,7 +32,7 @@ TEST(MinHeapTest, PopThrowsWhenEmpty) {
 TEST(MinHeapTest, NotEmptyAfterInsert) {
     MinHeap<int> heap;
     heap.insert(1);
-    ASSERT_EQ(false, heap.empty());
+    ASSERT_FALSE(heap.empty());
 }
 
 TEST(MinHeapTest, PeekReturnsValueAfterInsert) {

@@ -15,12 +15,12 @@ add_executable(tests ${test_sources})
 add_dependencies(tests googletest)
 
 target_link_libraries(tests
-    pthread
+    bsub_static
     ${GTEST_LIBS_DIR}/libgtest.a
+    pthread
     ${GTEST_LIBS_DIR}/libgtest_main.a
     ${GLOG_LIBRARIES}
     ${OpenCV_LIBS}
-    bsub_shared
 )
 
 # Run the Tests

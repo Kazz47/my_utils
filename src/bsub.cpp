@@ -57,8 +57,8 @@ void BSub::getBackgroundImage(cv::OutputArray backgroundImage) const {
 void BSub::updateModel(const cv::Mat &dist, const double &rate) {
     LOG_IF(ERROR, model->empty() == true) << "Apptempting to update an empty model.";
     cv::Mat prev_model(*model);
-    for (size_t r = 0; r < model->rows; r++) {
-        for (size_t c = 0; c < model->cols; c++) {
+    for (int r = 0; r < model->rows; r++) {
+        for (int c = 0; c < model->cols; c++) {
             unsigned int prev_val = prev_model.at<unsigned int>(r, c);
             unsigned int distance = dist.at<unsigned int>(r, c);
             model->at<unsigned int>(r, c) = ((1-rate) * prev_val) + rate * distance;

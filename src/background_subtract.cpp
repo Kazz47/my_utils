@@ -187,8 +187,8 @@ void processVideo(char* videoFilename) {
 
         //Count white pixels
         size_t bsub_white = 0;
-        for (size_t r = 0; r < fgMaskBSUB.rows; r++) {
-            for (size_t c = 0; c < fgMaskBSUB.cols; c++) {
+        for (int r = 0; r < fgMaskBSUB.rows; r++) {
+            for (int c = 0; c < fgMaskBSUB.cols; c++) {
                 if(fgMaskBSUB.at<float>(r, c) > 0) {
                     bsub_white++;
                 }
@@ -196,8 +196,8 @@ void processVideo(char* videoFilename) {
         }
 
         size_t mog_white = 0;
-        for (size_t r = 0; r < fgMaskMOG.rows; r++) {
-            for (size_t c = 0; c < fgMaskMOG.cols; c++) {
+        for (int r = 0; r < fgMaskMOG.rows; r++) {
+            for (int c = 0; c < fgMaskMOG.cols; c++) {
                 if(fgMaskMOG.at<float>(r, c) > 0) {
                     mog_white++;
                 }
@@ -205,8 +205,8 @@ void processVideo(char* videoFilename) {
         }
 
         size_t mog2_white = 0;
-        for (size_t r = 0; r < fgMaskMOG2.rows; r++) {
-            for (size_t c = 0; c < fgMaskMOG2.cols; c++) {
+        for (int r = 0; r < fgMaskMOG2.rows; r++) {
+            for (int c = 0; c < fgMaskMOG2.cols; c++) {
                 if(fgMaskMOG2.at<float>(r, c) > 0) {
                     mog2_white++;
                 }

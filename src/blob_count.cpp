@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
     // Initiate Google Logging
     google::InitGoogleLogging(argv[0]);
 
-    if (argc < 4) {
+    if (argc < 2) {
         LOG(ERROR) << "Not enough arguments:";
         LOG(ERROR) << getUsage();
         LOG(ERROR) << getDesc();
@@ -42,25 +42,38 @@ int main(int argc, char** argv) {
 
     // Read input values
     std::string img_filename = argv[1];
-    double min_area = atoi(argv[2]);
-    double max_area = atoi(argv[3]);
+    //double min_area = atoi(argv[2]);
+    //double max_area = atoi(argv[3]);
 
     // Blob Detection Params
-    cv::SimpleBlobDetector::Params params;
-    params.minDistBetweenBlobs = 10.0f;
-    params.filterByInertia = false;
-    params.filterByConvexity = false;
-    params.filterByColor = true;
-    params.blobColor = 255;
-    params.filterByCircularity = true;
-    params.minCircularity = 0.1; //0.1
-    params.maxCircularity = 0.9; //0.9
-    params.filterByArea = true;
-    params.minArea = min_area; //450
-    params.maxArea = max_area; //9500
+    cv::SimpleBlobDetector::Params bison_params;
+    bison_params.minDistBetweenBlobs = 10.0f;
+    bison_params.filterByInertia = false;
+    bison_params.filterByConvexity = false;
+    bison_params.filterByColor = false;
+    bison_params.filterByCircularity = true;
+    bison_params.minCircularity = 0.1; //0.1
+    bison_params.maxCircularity = 0.7; //0.9
+    bison_params.filterByArea = true;
+    bison_params.minArea = 450; //450
+    bison_params.maxArea = 9500; //9500
 
-    cv::Ptr<cv::FeatureDetector> blob_detect = new cv::SimpleBlobDetector(params);
-    blob_detect->create("BisonBlob");
+    cv::SimpleBlobDetector::Params calf_params;
+    calf_params.minDistBetweenBlobs = 10.0f;
+    calf_params.filterByInertia = false;
+    calf_params.filterByConvexity = false;
+    calf_params.filterByColor = false;
+    calf_params.filterByCircularity = true;
+    calf_params.minCircularity = 0.2; //0.2
+    calf_params.maxCircularity = 0.7; //0.7
+    calf_params.filterByArea = true;
+    calf_params.minArea = 250; //250
+    calf_params.maxArea = 1200; //1200
+
+    cv::Ptr<cv::FeatureDetector> bison_detect = new cv::SimpleBlobDetector(bison_params);
+    cv::Ptr<cv::FeatureDetector> calf_detect = new cv::SimpleBlobDetector(calf_params);
+    bison_detect->create("BisonBlob");
+    calf_detect->create("CalfBlob");
 
     LOG(INFO) << "Checking for blobs in: '" << img_filename << "'";
     cv::Mat image = cv::imread(img_filename, CV_LOAD_IMAGE_COLOR);
@@ -79,8 +92,8 @@ int main(int argc, char** argv) {
     //cv::waitKey(5000); // Wait for 5 seconds
 #endif
 
-    cv::Mat hsv;
-    cv::cvtColor(image, hsv, CV_BGR2HSV);
+    cv::Mat ycc;
+    cv::cvtColor(image, ycc, CV_BGR2YCrCb);
 
 #ifdef VISUAL
     //cv::imshow(W_NAME, hsv);
@@ -88,37 +101,42 @@ int main(int argc, char** argv) {
 #endif
 
     std::vector<cv::Mat> channels;
-    cv::split(hsv, channels);
-    cv::Mat hue = channels[0];
-    cv::Mat sat = channels[1];
-    cv::Mat val = channels[2];
+    cv::split(ycc, channels);
+    cv::Mat lum = channels[0];
+    cv::Mat red = channels[1];
+    cv::Mat blu = channels[2];
 #ifdef VISUAL
-    //cv::imshow("Hue", hue);
-    //cv::imshow("Sat", sat);
-    //cv::imshow("Val", val);
+    //cv::imshow("Luminance", lum);
+    //cv::imshow("Red Change", red);
+    //cv::imshow("Blue Change", blu);
     //cv::waitKey(5000); // Wait for 5 seconds
 #endif
-    cv::Mat mask = cv::Mat::zeros(sat.size(), sat.type());
-    mask = sat > 20;
-    cv::Mat thresh;
-    cv::threshold(hue, thresh, 22, 255, cv::THRESH_BINARY_INV);
-    thresh = thresh & mask;
-    std::vector<cv::KeyPoint> keypoints;
-    blob_detect->detect(thresh, keypoints);
-    LOG(INFO) << "Bison found: " << keypoints.size();
+    //cv::Mat mask = cv::Mat::zeros(sat.size(), sat.type());
+    //mask = sat > 20;
+    cv::Mat thresh = red > 132;
+    cv::Mat calf = red > 141;
+    std::vector<cv::KeyPoint> bison_keypoints;
+    std::vector<cv::KeyPoint> calf_keypoints;
+    bison_detect->detect(thresh, bison_keypoints);
+    calf_detect->detect(calf, calf_keypoints);
+    LOG(INFO) << "Total Bison found: " << bison_keypoints.size();
+    LOG(INFO) << "Calves found: " << calf_keypoints.size();
 
 #ifdef VISUAL
-    cv::imshow(W_NAME, mask);
+    //cv::imshow(W_NAME, mask);
     //cv::imshow(W_NAME, thresh);
-    cv::waitKey(5000); // Wait for 5 seconds
+    //cv::waitKey(5000); // Wait for 5 seconds
 #endif
 
-    cv::Mat hsv_keypoints;
-    drawKeypoints(thresh, keypoints, hsv_keypoints, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::Mat ycc_keypoints;
+    drawKeypoints(thresh, bison_keypoints, ycc_keypoints, cv::Scalar(255, 0, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    imwrite("total_bin.jpg", ycc_keypoints);
+    drawKeypoints(calf, calf_keypoints, ycc_keypoints, cv::Scalar(0, 255, 0), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    imwrite("calf_bin.jpg", ycc_keypoints);
 
 #ifdef VISUAL
-    cv::imshow(W_NAME, hsv_keypoints);
-    cv::waitKey(); // Wait for 5 seconds
+    cv::imshow(W_NAME, ycc_keypoints);
+    cv::waitKey();
 #endif
 
 #ifdef VISUAL

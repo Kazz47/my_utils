@@ -68,6 +68,24 @@ TEST_F(BSubTest, TestOperator) {
     delete subtractor;
 }
 
+TEST_F(BSubTest, TestLearningRate) {
+    subtractor = new BSub();
+    cv::Mat input_image = cv::Mat::ones(10, 10, CV_8U);
+    cv::Mat output_image;
+    cv::Mat background_image;
+    double learning_rate = 0.1;
+    subtractor->operator()(input_image, output_image, learning_rate);
+    subtractor->getBackgroundImage(background_image);
+
+    ASSERT_FALSE(output_image.empty());
+    for (int r = 0; r < input_image.rows; r++) {
+        for (int c = 0; c < input_image.cols; c++) {
+            ASSERT_EQ(static_cast<unsigned char>(input_image.at<unsigned char>(r, c) * learning_rate), background_image.at<unsigned char>(r, c));
+        }
+    }
+    delete subtractor;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {

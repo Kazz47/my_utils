@@ -12,9 +12,9 @@ class BSub : public cv::BackgroundSubtractor {
 public:
     BSub(const unsigned int &history = 10);
     ~BSub();
-    void operator()(cv::InputArray image, cv::OutputArray fgmask, double learningRate = 0);
-    void apply(cv::InputArray image, cv::OutputArray fgmask, double learningRate = 0);
-    void getBackgroundImage(cv::OutputArray backgroundImage) const;
+    void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
+    void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
+    void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
     cv::Mat *model;

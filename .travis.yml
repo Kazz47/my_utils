@@ -33,7 +33,6 @@ before_script:
  - cd build
  - cmake ..
  - make
- - make vtest
  - sudo make install
  - cd ../..
 #Main Program

@@ -15,11 +15,11 @@ BSub::~BSub() {
     VLOG(1) << "Deleted!";
 }
 
-void BSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learningRate) {
-    this->apply(image, fgmask, learningRate);
+void BSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
+    this->apply(image, fgmask, learning_rate);
 }
 
-void BSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learningRate) {
+void BSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
     cv::Mat input_image = image.getMat();
     if (input_image.channels() == 3) {
         cv::cvtColor(input_image, input_image, CV_BGR2GRAY);
@@ -40,17 +40,17 @@ void BSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learningRa
     }
 
     // Update Model
-    updateModel(diff, learningRate);
+    updateModel(diff, learning_rate);
 }
 
-void BSub::getBackgroundImage(cv::OutputArray backgroundImage) const {
-    if (!backgroundImage.needed() || model->empty()) {
+void BSub::getBackgroundImage(cv::OutputArray background_image) const {
+    if (!background_image.needed() || model->empty()) {
         VLOG(1) << "Background was empty";
         return;
     }
 
-    backgroundImage.create(model->size(), model->type());
-    cv::Mat output = backgroundImage.getMat();
+    background_image.create(model->size(), model->type());
+    cv::Mat output = background_image.getMat();
     model->copyTo(output);
     VLOG(1) << "Got background image";
 }

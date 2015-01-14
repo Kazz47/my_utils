@@ -8,6 +8,9 @@ compiler:
  - clang
  - gcc
 
+env:
+ - GTEST_ROOT=~/gtest
+
 before_script:
 #OpenCV
  - git clone https://github.com/Itseez/opencv.git
@@ -29,12 +32,9 @@ before_script:
 #Google Test
  - svn checkout http://googletest.googlecode.com/svn/trunk/ gtest
  - cd gtest
- - mkdir build
- - cd build
- - cmake ..
+ - cmake .
  - make
- - sudo make install
- - cd ../..
+ - cd ..
 #Main Program
  - mkdir build
  - cd build

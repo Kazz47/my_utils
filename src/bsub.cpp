@@ -2,6 +2,7 @@
 
 #include <glog/logging.h>
 
+#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 BSub::BSub(const unsigned int &history) {
@@ -28,18 +29,18 @@ void BSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learningRa
         LOG(INFO) << "Background Model is empty, setting it to a copy of the foreground.";
         input_image.copyTo(*model);
     }
+
     cv::Mat diff;
     cv::absdiff(input_image, *model, diff);
 
     if (fgmask.needed()) {
         fgmask.create(input_image.size(), input_image.type());
         cv::Mat mask = fgmask.getMat();
-        cv::threshold(diff, fgmask, 0, 255, cv::THRESH_BINARY);
+        cv::threshold(diff, fgmask, 150, 255, cv::THRESH_BINARY);
     }
 
     // Update Model
-    static const double rate = LEARNING_RATE;
-    updateModel(diff, rate);
+    updateModel(diff, learningRate);
 }
 
 void BSub::getBackgroundImage(cv::OutputArray backgroundImage) const {
@@ -54,14 +55,15 @@ void BSub::getBackgroundImage(cv::OutputArray backgroundImage) const {
     VLOG(1) << "Got background image";
 }
 
-void BSub::updateModel(const cv::Mat &dist, const double &rate) {
+void BSub::updateModel(const cv::Mat &diff, const double &rate) {
+    LOG_IF(ERROR, rate < 0 || rate > 1) << "Invalid rate.";
     LOG_IF(ERROR, model->empty() == true) << "Apptempting to update an empty model.";
     cv::Mat prev_model(*model);
     for (int r = 0; r < model->rows; r++) {
         for (int c = 0; c < model->cols; c++) {
-            unsigned int prev_val = prev_model.at<unsigned int>(r, c);
-            unsigned int distance = dist.at<unsigned int>(r, c);
-            model->at<unsigned int>(r, c) = ((1-rate) * prev_val) + rate * distance;
+            unsigned char prev_val = prev_model.at<unsigned char>(r, c);
+            unsigned char distance = diff.at<unsigned char>(r, c);
+            model->at<unsigned char>(r, c) = ((1-rate) * prev_val) + (rate * distance);
         }
     }
 }

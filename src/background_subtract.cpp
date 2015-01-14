@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
 
     //create GUI windows
     namedWindow("Frame");
+    namedWindow("FG Mask BSUB");
     namedWindow("FG Mask MOG");
     namedWindow("FG Mask MOG 2");
 
@@ -95,7 +96,7 @@ int main(int argc, char* argv[])
     pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
 
     //Open files
-    bsub_file.open("mog_file.dat");
+    bsub_file.open("bsub_file.dat");
     mog_file.open("mog_file.dat");
     mog2_file.open("mog2_file.dat");
 
@@ -152,10 +153,12 @@ void processVideo(char* videoFilename) {
         //src = frame.clone();
         //bilateralFilter(src, frame, t, t*2, t/2);
 
+
         //update the background model
         bsub->operator()(frame, fgMaskBSUB, 0.001);
         pMOG->operator()(frame, fgMaskMOG, 0.001);
         pMOG2->operator()(frame, fgMaskMOG2, 0.001);
+
         //get the frame number and write it on the current frame
         stringstream ss;
         rectangle(frame, cv::Point(10, 2), cv::Point(100,20),
@@ -177,13 +180,17 @@ void processVideo(char* videoFilename) {
         drawKeypoints(fgMaskMOG, mog_keypoints, fgMaskMOG, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
         drawKeypoints(fgMaskMOG2, mog2_keypoints, fgMaskMOG2, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
 
+        Mat model;
+        bsub->getBackgroundImage(model);
+
         //show the current frame and the fg masks
-        imshow("Frame", frame);;
+        imshow("Frame", frame);
+        imshow("Model", model);
         imshow("FG Mask BSUB", fgMaskBSUB);
         imshow("FG Mask MOG", fgMaskMOG);
         imshow("FG Mask MOG 2", fgMaskMOG2);
         //get the input from the keyboard
-        keyboard = waitKey( 30 );
+        keyboard = waitKey(30);
 
         //Count white pixels
         size_t bsub_white = 0;

@@ -17,7 +17,6 @@ public:
     void getBackgroundImage(cv::OutputArray backgroundImage) const;
 
 private:
-    static constexpr double LEARNING_RATE = 0.1;
     cv::Mat *model;
 
     void updateModel(const cv::Mat &dist, const double &rate);

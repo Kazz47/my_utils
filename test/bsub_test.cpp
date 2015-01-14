@@ -31,7 +31,7 @@ TEST_F(BSubTest, InitialBackgroundIsEmpty) {
     delete subtractor;
 }
 
-TEST_F(BSubTest, DISABLED_FirstBackgroundIsFirstInput) {
+TEST_F(BSubTest, FirstBackgroundIsFirstInput) {
     subtractor = new BSub();
     cv::Mat input_image = cv::Mat::ones(10, 10, CV_8U);
     cv::Mat output_image;
@@ -48,20 +48,22 @@ TEST_F(BSubTest, DISABLED_FirstBackgroundIsFirstInput) {
     delete subtractor;
 }
 
-TEST_F(BSubTest, DISABLED_TestApply) {
+TEST_F(BSubTest, TestApply) {
     subtractor = new BSub();
     cv::Mat input_image = cv::Mat::ones(10, 10, CV_8U);
     cv::Mat output_image;
     subtractor->apply(input_image, output_image);
+    //TODO Update the Assertion to something more meaningful
     ASSERT_FALSE(output_image.empty());
     delete subtractor;
 }
 
-TEST_F(BSubTest, DISABLED_TestOperator) {
+TEST_F(BSubTest, TestOperator) {
     subtractor = new BSub();
     cv::Mat input_image = cv::Mat::ones(10, 10, CV_8U);
     cv::Mat output_image;
     subtractor->operator()(input_image, output_image);
+    //TODO Update the Assertion to something more meaningful
     ASSERT_FALSE(output_image.empty());
     delete subtractor;
 }

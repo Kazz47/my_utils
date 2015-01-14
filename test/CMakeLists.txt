@@ -1,9 +1,5 @@
 include_directories(${GTEST_INCLUDE_DIRS} ${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS})
 
-# Testing Parameters
-# set(GTEST_SHUFFLE 1) # Shuffle test execution order
-# set(GTEST_RANDOM_SEED 0-9999)
-
 set(test_sources
     min_heap_test
     bsub_test
@@ -11,27 +7,28 @@ set(test_sources
 
 add_executable(tests ${test_sources})
 
-# Create dependency of the tests on googletest
-add_dependencies(tests googletest)
-
 target_link_libraries(tests
     bsub_static
-    ${GTEST_LIBS_DIR}/libgtest.a
+    ${GTEST_BOTH_LIBRARIES}
     pthread
-    ${GTEST_LIBS_DIR}/libgtest_main.a
     ${GLOG_LIBRARIES}
     ${OpenCV_LIBS}
 )
 
+add_test(AllUnitTests ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/tests --gtest_shuffle)
+
+
 # Run the Tests
-add_custom_command(
-    OUTPUT testOut.dat
-    COMMENT "Running tests"
-    COMMAND tests --gtest_shuffle
+add_custom_target(
+    RunTests ALL
+    DEPENDS tests
+    COMMAND ctest
 )
 
+# Print the Tests
 add_custom_target(
-    RunTest ALL
-    DEPENDS testOut.dat
+    vtest
+    DEPENDS tests
+    COMMAND ctest -V
 )
 

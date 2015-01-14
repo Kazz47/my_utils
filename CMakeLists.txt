@@ -1,5 +1,7 @@
 cmake_minimum_required (VERSION 2.8.7)
-project (K_UTILS) # Setup C Flags
+project (K_UTILS)
+
+# Setup C Flags
 SET (CMAKE_C_FLAGS                "-Wall -std=c99")
 SET (CMAKE_C_FLAGS_DEBUG          "-g")
 SET (CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
@@ -34,8 +36,7 @@ endif(DOXYGEN_FOUND)
 
 # Find Packages
 find_package(Glog REQUIRED)
-#find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
 
 # Build Settings
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fPIC")
@@ -50,9 +51,14 @@ set(INCLUDE_DIRS
     ${PROJECT_SOURCE_DIR}/include
 )
 
-add_subdirectory(src)
 
 # Sources
-add_subdirectory(libs)
-add_subdirectory(test)
+add_subdirectory(src)
+
+# Testing
+find_package(GTest REQUIRED)
+if(GTEST_FOUND)
+    ENABLE_TESTING()
+    add_subdirectory(test)
+endif(GTEST_FOUND)
 

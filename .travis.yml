@@ -26,6 +26,16 @@ before_script:
  - make -j4
  - sudo make -j4 install
  - cd ..
+#Google Test
+ - svn checkout http://googletest.googlecode.com/svn/trunk/ gtest
+ - cd gtest
+ - mkdir build
+ - cd build
+ - cmake ..
+ - make
+ - make vtest
+ - sudo make install
+ - cd ../..
 #Main Program
  - mkdir build
  - cd build

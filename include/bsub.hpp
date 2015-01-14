@@ -1,12 +1,10 @@
 #ifndef BSUB_H
 #define BSUB_H
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/background_segm.hpp>
 
 /**
- * Background subtraction class.
+ * Simple Background subtraction class.
  */
 class BSub : public cv::BackgroundSubtractor {
 public:
@@ -16,9 +14,10 @@ public:
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
     void getBackgroundImage(cv::OutputArray background_image) const;
 
-private:
+protected:
     cv::Mat *model;
 
+private:
     void updateModel(const cv::Mat &dist, const double &rate);
 };
 

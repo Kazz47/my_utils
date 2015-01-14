@@ -13,6 +13,7 @@
 #include <glog/logging.h>
 //My Libs
 #include "bsub.hpp"
+#include "kosub.hpp"
 
 using namespace cv;
 using namespace std;
@@ -91,7 +92,8 @@ int main(int argc, char* argv[])
     blob_detector = new SimpleBlobDetector(blob_params);
 
     //create Background Subtractor objects
-    bsub = new BSub(); // my approach
+    //bsub = new BSub(); // my approach
+    bsub = new KOSub(10); // ko approach
     pMOG = new BackgroundSubtractorMOG(); //MOG approach
     pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
 
@@ -155,7 +157,7 @@ void processVideo(char* videoFilename) {
 
 
         //update the background model
-        bsub->operator()(frame, fgMaskBSUB, 0.001);
+        bsub->operator()(frame, fgMaskBSUB, 0.1);
         pMOG->operator()(frame, fgMaskMOG, 0.001);
         pMOG2->operator()(frame, fgMaskMOG2, 0.001);
 

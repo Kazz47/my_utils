@@ -8,10 +8,25 @@ compiler:
  - clang
  - gcc
 
-env:
- - GTEST_ROOT=~/gtest
+before_install:
+ - sudo apt-get update
 
-before_script:
+install:
+#Google Log
+ - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog
+ - cd glog
+ - ./configure
+ - make -j4
+ - sudo make -j4 install
+ - cd ..
+#Google Test
+ - sudo apt-get install libgtest-dev
+ - mkdir gtest
+ - cd gtest
+ - cmake /usr/src/gtest/
+ - make
+ - sudo mv libg* /usr/lib/
+ - cd ..
 #OpenCV
  - git clone https://github.com/Itseez/opencv.git
  - cd opencv
@@ -22,19 +37,9 @@ before_script:
  - make -j4
  - sudo make -j4 install
  - cd ../..
-#Google Log
- - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog
- - cd glog
- - ./configure
- - make -j4
- - sudo make -j4 install
- - cd ..
-#Google Test
- - svn checkout http://googletest.googlecode.com/svn/trunk/ gtest
- - cd gtest
- - cmake .
- - make
- - cd ..
+
+
+before_script:
 #Main Program
  - mkdir build
  - cd build

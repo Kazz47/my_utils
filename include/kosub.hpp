@@ -8,18 +8,26 @@
  */
 class KOSub : public BSub {
 public:
-    KOSub(const unsigned int radius, const unsigned int &history = 10);
+    KOSub(
+        const unsigned int rows,
+        const unsigned int cols,
+        const unsigned int radius,
+        const unsigned int &history = 10);
+    ~KOSub();
     void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate);
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
+    void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
+    int rows;
+    int cols;
     unsigned int radius;
 
-    void updateModel(const cv::Mat &new_model, const double &rate);
-    float densityNeighborhood(const cv::Mat &image, const int row, const int col, const int radius);
-    unsigned char diracDelta(const unsigned char a, const unsigned char b) {
-        return a == b;
-    }
+    cv::Mat *model;
+    cv::Mat *diff;
+    cv::Mat *background_image;
+
+    float densityNeighborhood(const cv::Mat &image, const int row, const int col, const int color, const int radius);
 };
 
 #endif //KOSUB_H

@@ -91,12 +91,6 @@ int main(int argc, char* argv[])
     //create Blob Detector
     blob_detector = new SimpleBlobDetector(blob_params);
 
-    //create Background Subtractor objects
-    //bsub = new BSub(); // my approach
-    bsub = new KOSub(10); // ko approach
-    pMOG = new BackgroundSubtractorMOG(); //MOG approach
-    pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
-
     //Open files
     bsub_file.open("bsub_file.dat");
     mog_file.open("mog_file.dat");
@@ -139,6 +133,16 @@ void processVideo(char* videoFilename) {
         cerr << "Unable to open video file: " << videoFilename << endl;
         exit(EXIT_FAILURE);
     }
+
+    double rows = capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+    double cols = capture.get(CV_CAP_PROP_FRAME_WIDTH);
+
+    //create Background Subtractor objects
+    //bsub = new BSub(); // my approach
+    bsub = new KOSub(rows, cols, 5); // ko approach
+    pMOG = new BackgroundSubtractorMOG(); //MOG approach
+    pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
+
     //read input data. ESC or 'q' for quitting
     while( (char)keyboard != 'q' && (char)keyboard != 27 ){
         //read the current frame

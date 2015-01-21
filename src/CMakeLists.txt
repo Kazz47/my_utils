@@ -11,6 +11,11 @@ set(KOSUB_SOURCES
     kosub
 )
 
+set(VANSUB_SOURCES
+    ${BSUB_SOURCES}
+    vansub
+)
+
 set(SPLITTER_SOURCES
     video_splitter
 )
@@ -42,6 +47,9 @@ add_library(bsub_shared SHARED ${BSUB_SOURCES})
 add_library(kosub_static STATIC ${KOSUB_SOURCES})
 add_library(kosub_shared SHARED ${KOSUB_SOURCES})
 
+add_library(vansub_static STATIC ${VANSUB_SOURCES})
+add_library(vansub_shared SHARED ${VANSUB_SOURCES})
+
 add_executable(video_splitter ${SPLITTER_SOURCES})
 add_executable(wildlife_video_splitter ${WILDLIFE_SPLITTER_SOURCES})
 add_executable(background_subtract ${BSUB_TEST_SOURCES})
@@ -50,7 +58,7 @@ add_executable(fractal ${FRACTAL_SOURCES})
 
 target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(wildlife_video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
-target_link_libraries(background_subtract bsub_shared kosub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(background_subtract bsub_shared kosub_shared vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(blob_count ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(fractal ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 

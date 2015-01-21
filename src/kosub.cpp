@@ -44,17 +44,17 @@ void KOSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_
             float max_freq = 0;
             float val = 0;
             for (int z = 0; z < 256; z++) {
+                LOG_IF(ERROR, this->radius <= 0) << "Radius was set to zero.";
                 float new_val = densityNeighborhood(input_image, r, c, z, this->radius);
                 float prev_val = model->at<float>(r,c,z);
                 val += new_val * prev_val;
-                model->at<float>(r, c, z) = ((1-learning_rate) * prev_val) + (learning_rate * new_val);
+                model->at<float>(r,c,z) = ((1-learning_rate) * prev_val) + (learning_rate * new_val);
                 if (model->at<float>(r,c,z) > max_freq) {
                     bg_color = z;
                 }
             }
             this->background_image->at<unsigned char>(r,c) = bg_color;
             diff->at<float>(r,c) = 1-sqrt(val);
-            //LOG_IF(INFO, diff->at<float>(r,c) > 0) << diff->at<float>(r,c);
         }
     }
 
@@ -63,7 +63,7 @@ void KOSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_
         diff->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
         cv::Mat mask = fgmask.getMat();
-        cv::threshold(char_mat, fgmask, 200, 255, cv::THRESH_BINARY);
+        cv::threshold(char_mat, fgmask, 220, 255, cv::THRESH_BINARY);
     }
 }
 
@@ -77,21 +77,5 @@ void KOSub::getBackgroundImage(cv::OutputArray background_image) const {
     cv::Mat output = background_image.getMat();
     this->background_image->copyTo(output);
     VLOG(1) << "Got background image";
-}
-
-float KOSub::densityNeighborhood(const cv::Mat &image, const int row, const int col, const int color, const int radius) {
-    LOG_IF(ERROR, radius <= 0) << "Radius was set to zero.";
-    const unsigned int row_start = std::max(static_cast<int>(row) - radius, 0);
-    const unsigned int col_start = std::max(col - radius, 0);
-    const unsigned int row_end = std::min(row + radius, image.rows);
-    const unsigned int col_end = std::min(col + radius, image.cols);
-
-    float density = 0;
-    for (int r = row_start; r < row_end; r++) {
-        for (int c = col_start; c < col_end; c++) {
-            density += (color == image.at<unsigned char>(r,c));
-        }
-    }
-    return density / (radius * radius * 4);
 }
 

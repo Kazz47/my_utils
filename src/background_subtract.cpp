@@ -142,7 +142,8 @@ void processVideo(char* videoFilename) {
     //create Background Subtractor objects
     //bsub = new BSub(); // my approach
     //bsub = new KOSub(rows, cols, 4); // ko approach
-    bsub = new VANSub(rows, cols, 40); // ko approach
+    //bsub = new KOSub(rows, cols, 20, 2); // ko approach
+    bsub = new VANSub(rows, cols, 20, 20); // vibe approach
     pMOG = new BackgroundSubtractorMOG(); //MOG approach
     pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
 

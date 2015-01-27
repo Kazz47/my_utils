@@ -2,18 +2,25 @@
 
 #include <glog/logging.h>
 
+#include <cmath>
 #include <opencv2/imgproc/imgproc.hpp>
 
 VANSub::VANSub(
         const int rows,
         const int cols,
-        const unsigned int history
+        const int colors,
+        const int history
         ) {
     LOG_IF(ERROR, history <= 0) << "History was set to zero.";
     this->rows = rows;
     this->cols = cols;
+    this->colors = colors;
     this->history = history;
-    int sizes[] = {this->rows, this->cols, 256};
+
+    this->color_reduction = static_cast<float>(this->colors)/this->max_colors;
+    this->color_expansion = static_cast<float>(this->max_colors)/this->colors;
+
+    int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
     this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
     this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
@@ -45,7 +52,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         for (int r = 0; r < input_image.rows; r++) {
             for (int c = 0; c < input_image.cols; c++) {
                 for (int z = 0; z < this->history; z++) {
-                    model->at<unsigned char>(r,c,z) = input_image.at<unsigned char>(r,c);
+                    model->at<unsigned char>(r,c,z) = input_image.at<unsigned char>(r,c) * this->color_reduction;
                 }
             }
         }
@@ -56,7 +63,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
 
     for (int r = 0; r < input_image.rows; r++) {
         for (int c = 0; c < input_image.cols; c++) {
-            unsigned char input_val = input_image.at<unsigned char>(r,c);
+            unsigned char input_val = input_image.at<unsigned char>(r,c) * this->color_reduction;
             unsigned int matches = 0;
             for (int z = 0; z < this->history; z++) {
                 if (input_val == model->at<unsigned char>(r,c,z)) {
@@ -87,7 +94,9 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         cv::Mat char_mat;
         diff->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
-        cv::Mat mask = fgmask.getMat();
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2,2), cv::Point(0,0));
+        cv::morphologyEx(char_mat, char_mat, cv::MORPH_OPEN, kernel);
+        cv::morphologyEx(char_mat, char_mat, cv::MORPH_CLOSE, kernel);
         cv::threshold(char_mat, fgmask, 220, 255, cv::THRESH_BINARY);
     }
 }
@@ -100,7 +109,7 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
 
     for (int r = 0; r < this->rows; r++) {
         for (int c = 0; c < this->cols; c++) {
-            this->background_image->at<unsigned char>(r,c) = this->model->at<unsigned char>(r,c,0);
+            this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,0) * this->color_expansion;
         }
     }
 

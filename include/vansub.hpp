@@ -12,7 +12,8 @@ public:
     VANSub(
         const int rows,
         const int cols,
-        const unsigned int history = 20);
+        const int colors = 256,
+        const int history = 20);
     ~VANSub();
     void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate);
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
@@ -20,10 +21,15 @@ public:
 
 private:
     const unsigned int req_matches = 2;
+    const int max_colors = 256;
 
     int rows;
     int cols;
-    unsigned int history;
+    int colors;
+    int history;
+
+    float color_reduction;
+    float color_expansion;
     bool initiated = false;
 
     cv::Mat *model;

@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     bison_params.filterByColor = false;
     bison_params.filterByCircularity = true;
     bison_params.minCircularity = 0.1; //0.1
-    bison_params.maxCircularity = 0.7; //0.9
+    bison_params.maxCircularity = 0.7; //0.7
     bison_params.filterByArea = true;
     bison_params.minArea = 450; //450
     bison_params.maxArea = 9500; //9500
@@ -93,18 +93,25 @@ int main(int argc, char** argv) {
 #endif
 
     cv::Mat ycc;
+    cv::Mat hsv;
     cv::cvtColor(image, ycc, CV_BGR2YCrCb);
+    //cv::cvtColor(image, hsv, CV_BGR2HSV);
 
 #ifdef VISUAL
     //cv::imshow(W_NAME, hsv);
     //cv::waitKey(5000); // Wait for 5 seconds
 #endif
 
-    std::vector<cv::Mat> channels;
-    cv::split(ycc, channels);
-    cv::Mat lum = channels[0];
-    cv::Mat red = channels[1];
-    cv::Mat blu = channels[2];
+    std::vector<cv::Mat> ycc_channels;
+    cv::split(ycc, ycc_channels);
+    cv::Mat lum = ycc_channels[0];
+    cv::Mat red = ycc_channels[1];
+    cv::Mat blu = ycc_channels[2];
+
+    //cv::split(hsv, hsv_channels);
+    //cv::Mat hue = hsv_channels[0];
+    //cv::Mat sat = hsv_channels[1];
+    //cv::Mat val = hsv_channels[2];
 #ifdef VISUAL
     //cv::imshow("Luminance", lum);
     //cv::imshow("Red Change", red);

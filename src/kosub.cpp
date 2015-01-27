@@ -7,15 +7,20 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 KOSub::KOSub(
-        const unsigned int rows,
-        const unsigned int cols,
-        const unsigned int radius,
-        const unsigned int &history
+        const int rows,
+        const int cols,
+        const int colors,
+        const int radius
         ) {
-    this->radius = radius;
     this->rows = rows;
     this->cols = cols;
-    int sizes[] = {this->rows, this->cols, 256};
+    this->colors = colors;
+    this->radius = radius;
+
+    this->color_reduction = static_cast<float>(this->colors)/this->max_colors;
+    this->color_expansion = static_cast<float>(this->max_colors)/this->colors;
+
+    int sizes[] = {this->rows, this->cols, this->colors};
     this->model = new cv::Mat(3, sizes, CV_32F, cv::Scalar(0));
     this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
     this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
@@ -43,7 +48,7 @@ void KOSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_
             unsigned char bg_color = 0;
             float max_freq = 0;
             float val = 0;
-            for (int z = 0; z < 256; z++) {
+            for (int z = 0; z < this->colors; z++) {
                 LOG_IF(ERROR, this->radius <= 0) << "Radius was set to zero.";
                 float new_val = densityNeighborhood(input_image, r, c, z, this->radius);
                 float prev_val = model->at<float>(r,c,z);
@@ -53,7 +58,7 @@ void KOSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_
                     bg_color = z;
                 }
             }
-            this->background_image->at<unsigned char>(r,c) = bg_color;
+            this->background_image->at<unsigned char>(r,c) = bg_color * this->color_expansion;
             diff->at<float>(r,c) = 1-sqrt(val);
         }
     }
@@ -62,8 +67,7 @@ void KOSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_
         cv::Mat char_mat;
         diff->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
-        cv::Mat mask = fgmask.getMat();
-        cv::threshold(char_mat, fgmask, 220, 255, cv::THRESH_BINARY);
+        cv::threshold(char_mat, fgmask, 150, 255, cv::THRESH_BINARY);
     }
 }
 

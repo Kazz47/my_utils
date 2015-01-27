@@ -3,25 +3,33 @@
 
 #include "bsub.hpp"
 
+#include <cmath>
+
 /**
  * Ko_2008_Background background subtraction class.
  */
 class KOSub : public BSub {
 public:
     KOSub(
-        const unsigned int rows,
-        const unsigned int cols,
-        const unsigned int radius,
-        const unsigned int &history = 10);
+        const int rows,
+        const int cols,
+        const int colors = 256,
+        const int radius = 5);
     ~KOSub();
     void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate);
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
     void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
+    const int max_colors = 256;
+
     int rows;
     int cols;
+    int colors;
     unsigned int radius;
+
+    float color_reduction;
+    float color_expansion;
 
     cv::Mat *model;
     cv::Mat *diff;
@@ -37,7 +45,7 @@ private:
         for (int r = row_start; r < row_end; r++) {
             unsigned char *p = image.ptr<unsigned char>(r);
             for (int c = col_start; c < col_end; c++) {
-                density += (color == p[c]);
+                density += (color == floor(this->color_reduction * p[c]));
             }
         }
         return density / (radius * radius * 4);

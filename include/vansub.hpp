@@ -38,7 +38,10 @@ private:
 
     std::mt19937 *gen;
     std::uniform_int_distribution<int> *history_update;
-    std::uniform_int_distribution<int> *absorb_foreground;
+    std::uniform_int_distribution<int> *update_neighbor;
+    std::uniform_int_distribution<int> *pick_neighbor;
+
+    void initiateModel(cv::Mat &image);
 };
 
 #endif //VANSUB_H

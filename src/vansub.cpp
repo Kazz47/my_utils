@@ -28,7 +28,8 @@ VANSub::VANSub(
     std::random_device rd;
     this->gen = new std::mt19937(rd());
     this->history_update = new std::uniform_int_distribution<int>(0, history-1);
-    this->absorb_foreground = new std::uniform_int_distribution<int>(0, 15);
+    this->update_neighbor= new std::uniform_int_distribution<int>(0, 15);
+    this->pick_neighbor = new std::uniform_int_distribution<int>(0, 7);
 }
 
 //Only supports 8-bit images
@@ -49,13 +50,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     }
 
     if (!this->initiated) {
-        for (int r = 0; r < input_image.rows; r++) {
-            for (int c = 0; c < input_image.cols; c++) {
-                for (int z = 0; z < this->history; z++) {
-                    model->at<unsigned char>(r,c,z) = input_image.at<unsigned char>(r,c) * this->color_reduction;
-                }
-            }
-        }
+        initiateModel(input_image);
         this->initiated = true;
     }
 
@@ -73,31 +68,87 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
                     }
                 }
             }
-            if (matches >= req_matches) {
+            if (matches >= req_matches) { // Background
+                // Set foreground mask to zero.
+                diff->at<float>(r,c) = 0.0;
+
                 // Add pixel value to background model.
                 int pos = (*(this->history_update))(*(this->gen));
                 LOG_IF(ERROR, pos >= this->history) << "RNG Error";
                 model->at<unsigned char>(r,c,pos) = input_val;
-                diff->at<float>(r,c) = 0.0;
-            } else {
+
+                // Randomly add value to neighbor pixel
+                // TODO Make this a function
+                int rng_update = (*(this->update_neighbor))(*(this->gen));
+                if (rng_update == 0) {
+                    int neighbor = (*(this->pick_neighbor))(*(this->gen));
+                    int pos = (*(this->history_update))(*(this->gen));
+                    LOG_IF(ERROR, pos >= this->history) << "RNG Error";
+                    switch(neighbor) {
+                        case 0:
+                            if (r > 1 && c > 1) {
+                                model->at<unsigned char>(r-1,c-1,pos) = input_val;
+                            }
+                            break;
+                        case 1:
+                            if (r > 1) {
+                                model->at<unsigned char>(r-1,c,pos) = input_val;
+                            }
+                            break;
+                        case 2:
+                            if (r > 1 && c < input_image.cols - 1) {
+                                model->at<unsigned char>(r-1,c+1,pos) = input_val;
+                            }
+                            break;
+                        case 3:
+                            if (c > 1) {
+                                model->at<unsigned char>(r,c-1,pos) = input_val;
+                            }
+                            break;
+                        case 4:
+                            if (c < input_image.cols - 1) {
+                                model->at<unsigned char>(r,c+1,pos) = input_val;
+                            }
+                            break;
+                        case 5:
+                            if (r < input_image.rows - 1 && c > 1) {
+                                model->at<unsigned char>(r+1,c-1,pos) = input_val;
+                            }
+                            break;
+                        case 6:
+                            if (r < input_image.rows - 1) {
+                                model->at<unsigned char>(r+1,c,pos) = input_val;
+                            }
+                            break;
+                        case 7:
+                            if (r < input_image.rows - 1 && c < input_image.cols - 1) {
+                                model->at<unsigned char>(r+1,c+1,pos) = input_val;
+                            }
+                            break;
+                    }
+                }
+            } else { // Foreground
+                /*
                 int rng_update = (*(this->absorb_foreground))(*(this->gen));
                 if (rng_update == 0) {
                     int pos = (*(this->history_update))(*(this->gen));
                     LOG_IF(ERROR, pos >= this->history) << "RNG Error";
                     model->at<unsigned char>(r,c,pos) = input_val;
                 }
+                */
             }
         }
     }
+
+   //TODO Use (open-close filter && mask) as new mask for updating
 
     if (fgmask.needed()) {
         cv::Mat char_mat;
         diff->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
-        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2,2), cv::Point(0,0));
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4,4), cv::Point(0,0));
         cv::morphologyEx(char_mat, char_mat, cv::MORPH_OPEN, kernel);
-        cv::morphologyEx(char_mat, char_mat, cv::MORPH_CLOSE, kernel);
-        cv::threshold(char_mat, fgmask, 220, 255, cv::THRESH_BINARY);
+        cv::morphologyEx(char_mat, fgmask, cv::MORPH_CLOSE, kernel);
     }
 }
 
@@ -117,5 +168,25 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
     cv::Mat output = background_image.getMat();
     this->background_image->copyTo(output);
     VLOG(1) << "Got background image";
+}
+
+void VANSub::initiateModel(cv::Mat &image) {
+    std::uniform_int_distribution<int> color_range(0, 5);
+    for (int r = 0; r < image.rows; r++) {
+        for (int c = 0; c < image.cols; c++) {
+            for (int z = 0; z < this->req_matches; z++) {
+                model->at<unsigned char>(r,c,z) = image.at<unsigned char>(r,c) * this->color_reduction;
+            }
+            for (int z = this->req_matches; z < this->history; z++) {
+                // TODO Add random pixel value here
+                if (z%2 == 0) {
+                    model->at<unsigned char>(r,c,z) = model->at<unsigned char>(r,c,0) + color_range(*(this->gen));
+                } else {
+                    model->at<unsigned char>(r,c,z) = model->at<unsigned char>(r,c,0) - color_range(*(this->gen));
+                }
+                //LOG(INFO) << "(" << r << "," << c << "," << z << ") = " << static_cast<unsigned int>(model->at<unsigned char>(r,c,z));
+            }
+        }
+    }
 }
 

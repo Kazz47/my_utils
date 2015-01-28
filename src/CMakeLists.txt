@@ -28,6 +28,10 @@ set(BLOB_COUNT_SOURCES
     blob_count
 )
 
+set(IMAGE_CROP_SOURCES
+    image_crop
+)
+
 set(FRACTAL_SOURCES
     fractal
 )
@@ -54,11 +58,13 @@ add_executable(video_splitter ${SPLITTER_SOURCES})
 add_executable(wildlife_video_splitter ${WILDLIFE_SPLITTER_SOURCES})
 add_executable(background_subtract ${BSUB_TEST_SOURCES})
 add_executable(blob_count ${BLOB_COUNT_SOURCES})
+add_executable(image_crop ${IMAGE_CROP_SOURCES})
 add_executable(fractal ${FRACTAL_SOURCES})
 
 target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(wildlife_video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(background_subtract bsub_shared kosub_shared vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(blob_count ${GLOG_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(image_crop ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(fractal ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 

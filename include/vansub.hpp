@@ -1,6 +1,7 @@
 #ifndef VANSUB_H
 #define VANSUB_H
 
+#include <vector>
 #include <random>
 #include "bsub.hpp"
 
@@ -12,6 +13,7 @@ public:
     VANSub(
         const int rows,
         const int cols,
+        const int radius = 20,
         const int colors = 256,
         const int history = 20);
     ~VANSub();
@@ -25,12 +27,15 @@ private:
 
     int rows;
     int cols;
+    int radius;
     int colors;
     int history;
 
     float color_reduction;
     float color_expansion;
     bool initiated = false;
+
+    std::vector<cv::Rect> *masks;
 
     cv::Mat *model;
     cv::Mat *diff;
@@ -41,7 +46,7 @@ private:
     std::uniform_int_distribution<int> *update_neighbor;
     std::uniform_int_distribution<int> *pick_neighbor;
 
-    void initiateModel(cv::Mat &image);
+    void initiateModel(cv::Mat &image, cv::Rect &random_init);
 };
 
 #endif //VANSUB_H

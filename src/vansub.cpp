@@ -8,17 +8,22 @@
 VANSub::VANSub(
         const int rows,
         const int cols,
+        const int radius,
         const int colors,
         const int history
         ) {
     LOG_IF(ERROR, history <= 0) << "History was set to zero.";
     this->rows = rows;
     this->cols = cols;
+    this->radius = radius;
     this->colors = colors;
     this->history = history;
 
     this->color_reduction = static_cast<float>(this->colors)/this->max_colors;
     this->color_expansion = static_cast<float>(this->max_colors)/this->colors;
+
+    this->masks = new std::vector<cv::Rect>();
+    this->masks->push_back(cv::Rect(530, 420, 150, 50));
 
     int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
@@ -28,7 +33,8 @@ VANSub::VANSub(
     std::random_device rd;
     this->gen = new std::mt19937(rd());
     this->history_update = new std::uniform_int_distribution<int>(0, history-1);
-    this->update_neighbor= new std::uniform_int_distribution<int>(0, 15);
+    //this->update_neighbor= new std::uniform_int_distribution<int>(0, 15);
+    this->update_neighbor= new std::uniform_int_distribution<int>(0, 100);
     this->pick_neighbor = new std::uniform_int_distribution<int>(0, 7);
 }
 
@@ -50,7 +56,9 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     }
 
     if (!this->initiated) {
-        initiateModel(input_image);
+        //cv::Rect random_init(100, 200, input_image.cols-200, input_image.rows-300);
+        cv::Rect random_init(0,0,0,0);
+        initiateModel(input_image, random_init);
         this->initiated = true;
     }
 
@@ -61,7 +69,8 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
             unsigned char input_val = input_image.at<unsigned char>(r,c) * this->color_reduction;
             unsigned int matches = 0;
             for (int z = 0; z < this->history; z++) {
-                if (input_val == model->at<unsigned char>(r,c,z)) {
+                int dist = abs(static_cast<int>(input_val) - model->at<unsigned char>(r,c,z));
+                if (dist <= this->radius) {
                     matches++;
                     if (matches >= req_matches) {
                         break;
@@ -140,15 +149,32 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         }
     }
 
-   //TODO Use (open-close filter && mask) as new mask for updating
-
     if (fgmask.needed()) {
+        // Mask image
+        for (int i = 0; i < this->masks->size(); i++) {
+            cv::rectangle(*(this->diff), this->masks->at(i), cv::Scalar(0), CV_FILLED);
+        }
+
         cv::Mat char_mat;
         diff->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
+
+        // Smooth mask (remove noise)
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4,4), cv::Point(0,0));
         cv::morphologyEx(char_mat, char_mat, cv::MORPH_OPEN, kernel);
-        cv::morphologyEx(char_mat, fgmask, cv::MORPH_CLOSE, kernel);
+        cv::morphologyEx(char_mat, char_mat, cv::MORPH_CLOSE, kernel);
+
+        char_mat.copyTo(fgmask);
+
+        // Find Convex Hull
+        std::vector<std::vector<cv::Point>> contours;
+        std::vector<cv::Vec4i> hierarchy;
+        cv::findContours(char_mat, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+        std::vector<std::vector<cv::Point>> hull(contours.size());
+        for (int i = 0; i < contours.size(); i++) {
+            cv::convexHull(cv::Mat(contours[i]), hull[i], false);
+            cv::drawContours(fgmask, hull, i, cv::Scalar(100), CV_FILLED);
+        }
     }
 }
 
@@ -160,7 +186,7 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
 
     for (int r = 0; r < this->rows; r++) {
         for (int c = 0; c < this->cols; c++) {
-            this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,0) * this->color_expansion;
+            this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,2) * this->color_expansion;
         }
     }
 
@@ -170,21 +196,29 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
     VLOG(1) << "Got background image";
 }
 
-void VANSub::initiateModel(cv::Mat &image) {
-    std::uniform_int_distribution<int> color_range(0, 5);
+void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
+    std::uniform_int_distribution<int> random_row(0, image.rows-1);
+    std::uniform_int_distribution<int> random_col(0, image.cols-1);
     for (int r = 0; r < image.rows; r++) {
         for (int c = 0; c < image.cols; c++) {
-            for (int z = 0; z < this->req_matches; z++) {
-                model->at<unsigned char>(r,c,z) = image.at<unsigned char>(r,c) * this->color_reduction;
-            }
-            for (int z = this->req_matches; z < this->history; z++) {
-                // TODO Add random pixel value here
-                if (z%2 == 0) {
-                    model->at<unsigned char>(r,c,z) = model->at<unsigned char>(r,c,0) + color_range(*(this->gen));
-                } else {
-                    model->at<unsigned char>(r,c,z) = model->at<unsigned char>(r,c,0) - color_range(*(this->gen));
+            if (!random_init.contains(cv::Point(c,r))) {
+                for (int z = 0; z < this->req_matches; z++) {
+                    model->at<unsigned char>(r,c,z) = image.at<unsigned char>(r,c) * this->color_reduction;
                 }
-                //LOG(INFO) << "(" << r << "," << c << "," << z << ") = " << static_cast<unsigned int>(model->at<unsigned char>(r,c,z));
+                for (int z = this->req_matches; z < this->history; z++) {
+                    // TODO Add random pixel value here
+                    int row = random_row(*(this->gen));
+                    int col = random_col(*(this->gen));
+                    model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
+                }
+            } else {
+                // And values randomly from outside the rect
+                for (int z = 0; z < this->history; z++) {
+                    // TODO Add random pixel value here
+                    int row = random_row(*(this->gen));
+                    int col = random_col(*(this->gen));
+                    model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
+                }
             }
         }
     }

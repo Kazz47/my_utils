@@ -28,7 +28,7 @@ SimpleBlobDetector::Params blob_params;
 Ptr<SimpleBlobDetector> blob_detector;
 Ptr<BackgroundSubtractor> bsub; //My Background subtractor
 Ptr<BackgroundSubtractor> pMOG; //MOG Background subtractor
-Ptr<BackgroundSubtractor> pMOG2; //MOG2 Background subtractor
+//Ptr<BackgroundSubtractor> pMOG2; //MOG2 Background subtractor
 int keyboard; //input from keyboard
 
 // Output
@@ -87,8 +87,8 @@ int main(int argc, char* argv[])
     namedWindow("Frame");
     namedWindow("Model");
     namedWindow("FG Mask BSUB");
-    namedWindow("FG Mask MOG");
-    namedWindow("FG Mask MOG 2");
+    //namedWindow("FG Mask MOG");
+    //namedWindow("FG Mask MOG 2");
 
     //create Blob Detector
     blob_detector = new SimpleBlobDetector(blob_params);
@@ -143,9 +143,9 @@ void processVideo(char* videoFilename) {
     //bsub = new BSub(); // my approach
     //bsub = new KOSub(rows, cols, 4); // ko approach
     //bsub = new KOSub(rows, cols, 20, 2); // ko approach
-    bsub = new VANSub(rows, cols, 10, 20); // vibe approach
+    bsub = new VANSub(rows, cols, 10, 256, 20); // vibe approach
     pMOG = new BackgroundSubtractorMOG(); //MOG approach
-    pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
+    //pMOG2 = new BackgroundSubtractorMOG2(); //MOG2 approach
 
     //read input data. ESC or 'q' for quitting
     while( (char)keyboard != 'q' && (char)keyboard != 27 ){
@@ -167,7 +167,7 @@ void processVideo(char* videoFilename) {
         //update the background model
         bsub->operator()(frame, fgMaskBSUB, 0.1);
         pMOG->operator()(frame, fgMaskMOG, 0.001);
-        pMOG2->operator()(frame, fgMaskMOG2, 0.001);
+        //pMOG2->operator()(frame, fgMaskMOG2, 0.001);
 
         //get the frame number and write it on the current frame
         stringstream ss;
@@ -181,14 +181,14 @@ void processVideo(char* videoFilename) {
         //Detect blobs in masks
         vector<KeyPoint> bsub_keypoints;
         vector<KeyPoint> mog_keypoints;
-        vector<KeyPoint> mog2_keypoints;
+        //vector<KeyPoint> mog2_keypoints;
         blob_detector->detect(fgMaskBSUB, bsub_keypoints);
         blob_detector->detect(fgMaskMOG, mog_keypoints);
-        blob_detector->detect(fgMaskMOG2, mog2_keypoints);
+        //blob_detector->detect(fgMaskMOG2, mog2_keypoints);
 
         drawKeypoints(fgMaskBSUB, bsub_keypoints, fgMaskBSUB, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
         drawKeypoints(fgMaskMOG, mog_keypoints, fgMaskMOG, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
-        drawKeypoints(fgMaskMOG2, mog2_keypoints, fgMaskMOG2, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
+        //drawKeypoints(fgMaskMOG2, mog2_keypoints, fgMaskMOG2, Scalar::all(-1), DrawMatchesFlags::DEFAULT);
 
         Mat model;
         bsub->getBackgroundImage(model);
@@ -198,7 +198,7 @@ void processVideo(char* videoFilename) {
         imshow("Model", model);
         imshow("FG Mask BSUB", fgMaskBSUB);
         imshow("FG Mask MOG", fgMaskMOG);
-        imshow("FG Mask MOG 2", fgMaskMOG2);
+        //imshow("FG Mask MOG 2", fgMaskMOG2);
         //get the input from the keyboard
         keyboard = waitKey(30);
 
@@ -260,7 +260,7 @@ void processImages(char* fistFrameFilename) {
         //update the background model
         bsub->operator()(frame, fgMaskBSUB);
         pMOG->operator()(frame, fgMaskMOG);
-        pMOG2->operator()(frame, fgMaskMOG2);
+        //pMOG2->operator()(frame, fgMaskMOG2);
         //get the frame number and write it on the current frame
         size_t index = fn.find_last_of("/");
         if(index == string::npos) {
@@ -281,7 +281,7 @@ void processImages(char* fistFrameFilename) {
         imshow("Frame", frame);
         imshow("FG Mask BSUB", fgMaskBSUB);
         imshow("FG Mask MOG", fgMaskMOG);
-        imshow("FG Mask MOG 2", fgMaskMOG2);
+        //imshow("FG Mask MOG 2", fgMaskMOG2);
         //get the input from the keyboard
         keyboard = waitKey( 30 );
         //search for the next image in the sequence

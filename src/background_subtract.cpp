@@ -4,13 +4,16 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/video/background_segm.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
 //C++
 #include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
 //Logging
 #include <glog/logging.h>
+
 //My Libs
 #include "bsub.hpp"
 #include "kosub.hpp"

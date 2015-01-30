@@ -70,7 +70,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     for (int r = 0; r < input_image.rows; r++) {
         for (int c = 0; c < input_image.cols; c++) {
             unsigned char input_val = input_image.at<unsigned char>(r,c) * this->color_reduction;
-            unsigned int matches = 0;
+            int matches = 0;
             for (int z = 0; z < this->history; z++) {
                 int dist = abs(static_cast<int>(input_val) - model->at<unsigned char>(r,c,z));
                 if (dist <= this->radius) {

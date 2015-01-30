@@ -13,6 +13,9 @@ VANSub::VANSub(
         const int history
         ) {
     LOG_IF(ERROR, history <= 0) << "History was set to zero.";
+
+    this->initiated = false;
+
     this->rows = rows;
     this->cols = cols;
     this->radius = radius;
@@ -151,7 +154,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
 
     if (fgmask.needed()) {
         // Mask image
-        for (int i = 0; i < this->masks->size(); i++) {
+        for (unsigned int i = 0; i < this->masks->size(); i++) {
             cv::rectangle(*(this->diff), this->masks->at(i), cv::Scalar(0), CV_FILLED);
         }
 
@@ -171,7 +174,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         std::vector<cv::Vec4i> hierarchy;
         cv::findContours(char_mat, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
         std::vector<std::vector<cv::Point>> hull(contours.size());
-        for (int i = 0; i < contours.size(); i++) {
+        for (unsigned int i = 0; i < contours.size(); i++) {
             cv::convexHull(cv::Mat(contours[i]), hull[i], false);
             cv::drawContours(fgmask, hull, i, cv::Scalar(100), CV_FILLED);
         }

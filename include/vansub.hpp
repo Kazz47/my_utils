@@ -22,7 +22,7 @@ public:
     void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
-    const unsigned int req_matches = 2;
+    const int req_matches = 2;
     const int max_colors = 256;
 
     int rows;
@@ -33,7 +33,7 @@ private:
 
     float color_reduction;
     float color_expansion;
-    bool initiated = false;
+    bool initiated;
 
     std::vector<cv::Rect> *masks;
 

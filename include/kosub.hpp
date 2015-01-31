@@ -21,7 +21,7 @@ public:
     void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
-    const int max_colors = 256;
+    const static int max_colors = 256;
 
     int rows;
     int cols;

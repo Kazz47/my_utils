@@ -15,6 +15,7 @@ static const std::string W_NAME = "WINDOW";
 // Frequency in seconds to write frame to disk
 size_t WRITE_FREQUENCY = 5;
 
+
 std::string getUsage() {
     std::stringstream ss;
     ss << "Usage: <image> <min_area> <max_area>";
@@ -85,11 +86,6 @@ int main(int argc, char** argv) {
 
 #ifdef VISUAL
     cv::namedWindow(W_NAME, cv::WINDOW_NORMAL);
-    //cv::namedWindow("Hue", cv::WINDOW_NORMAL);
-    //cv::namedWindow("Sat", cv::WINDOW_NORMAL);
-    //cv::namedWindow("Val", cv::WINDOW_NORMAL);
-    //cv::imshow(W_NAME, image);
-    //cv::waitKey(5000); // Wait for 5 seconds
 #endif
 
     cv::Mat ycc;

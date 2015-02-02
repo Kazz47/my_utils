@@ -10,8 +10,14 @@
 // Name of the main program window
 static const std::string W_NAME = "WINDOW";
 
-// Frequency in seconds to write frame to disk
-size_t WRITE_FREQUENCY = 5;
+cv::Mat orignal_image, mask;
+cv::Mat lum, red, blu;
+
+// Drawing vars
+bool drawing = false;
+std::vector<cv::Rect*> boxes;
+int box_size = 10;
+cv::Scalar box_color(0,0,255);
 
 std::string getUsage() {
     std::stringstream ss;
@@ -23,6 +29,108 @@ std::string getDesc() {
     std::stringstream ss;
     ss << "Description: All inputs should be normalized: [0, 1]";
     return ss.str();
+}
+
+void draw() {
+    cv::Mat masked;
+    orignal_image.copyTo(masked, mask);
+    for (cv::Rect *box : boxes) {
+        cv::rectangle(masked, *box, box_color, box_size);
+    }
+    cv::imshow(W_NAME, masked);
+}
+
+void onMouseCallback(int event, int x, int y, int flags, void *) {
+    if (event == cv::EVENT_LBUTTONDOWN) {
+        drawing = true;
+        boxes.push_back(new cv::Rect(x,y,0,0));
+    } else if (event == cv::EVENT_LBUTTONUP) {
+        cv::Rect *box = boxes.back();
+        drawing = false;
+        if (box->width <= 0) {
+            box->x += box->width;
+            box->width *= -1;
+        }
+        if (box->height <= 0) {
+            box->y += box->height;
+            box->height *= -1;
+        }
+
+        draw();
+    } else if (event == cv::EVENT_MOUSEMOVE) {
+        if (drawing) {
+            cv::Rect *box = boxes.back();
+            box->width = x - box->x;
+            box->height = y - box->y;
+
+            draw();
+        }
+    }
+}
+
+void onBisonSlider(int slider_value, void*) {
+    mask = red > slider_value;
+
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(0,0));
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+
+    draw();
+}
+
+void onCalfSlider(int slider_value, void*) {
+    return;
+}
+
+void cropImage(int, void*) {
+    //Mask image
+    cv::Mat masked;
+    orignal_image.copyTo(masked, mask);
+    for (cv::Rect *box : boxes) {
+        cv::rectangle(masked, *box, cv::Scalar(0,0,0), CV_FILLED);
+    }
+    imwrite("masked.jpg", masked);
+
+    // Loop to extract training data from the bison mask
+    unsigned int inc = 0;
+    for (int r = 0; r < orignal_image.rows-33; r++) {
+        for (int c = 0; c < orignal_image.cols-33; c++) {
+            cv::Vec3f pixel = masked.at<cv::Vec3b>(r+16,c+16);
+            uchar blue = pixel[0];
+            uchar green = pixel[1];
+            uchar red = pixel[2];
+            if (blue > 0 || green > 0 || red > 0) {
+                cv::Rect crop_rect = cv::Rect(c, r, 32, 32);
+                std::stringstream ss;
+                ss << "Cropping " << crop_rect;
+                cv::displayStatusBar(W_NAME, ss.str());
+                cv::Mat crop_image(32, 32, CV_8UC3, cv::Scalar(0, 0, 0));
+                orignal_image(crop_rect).copyTo(crop_image);
+                imwrite("training_data/" + std::to_string(inc) + ".jpg", crop_image);
+                inc++;
+            }
+        }
+    }
+    cv::displayStatusBar(W_NAME, "Created " + std::to_string(inc) + " images.", 60000);
+}
+
+void toggleRects(int checked, void*) {
+    if (checked) {
+        box_size = 10;
+        box_color = cv::Scalar(0,0,255);
+    } else {
+        box_size = CV_FILLED;
+        box_color = cv::Scalar(0,0,0);
+    }
+    draw();
+}
+
+void clearRects(int, void*) {
+    for (cv::Rect *box : boxes) {
+        delete(box);
+    }
+    boxes.clear();
+    draw();
 }
 
 int main(int argc, char** argv) {
@@ -40,101 +148,36 @@ int main(int argc, char** argv) {
 
     // Read input values
     std::string img_filename = argv[1];
-    //double min_area = atoi(argv[2]);
-    //double max_area = atoi(argv[3]);
 
-    // Blob Detection Params
-    cv::SimpleBlobDetector::Params bison_params;
-    bison_params.minDistBetweenBlobs = 10.0f;
-    bison_params.filterByInertia = false;
-    bison_params.filterByConvexity = false;
-    bison_params.filterByColor = false;
-    bison_params.filterByCircularity = true;
-    bison_params.minCircularity = 0.1; //0.1
-    bison_params.maxCircularity = 0.7; //0.7
-    bison_params.filterByArea = true;
-    bison_params.minArea = 450; //450
-    bison_params.maxArea = 9500; //9500
+    orignal_image = cv::imread(img_filename, CV_LOAD_IMAGE_COLOR);
+    //cv::GaussianBlur(original_image, image, cv::Size(0, 0), 5);
 
-    cv::SimpleBlobDetector::Params calf_params;
-    calf_params.minDistBetweenBlobs = 10.0f;
-    calf_params.filterByInertia = false;
-    calf_params.filterByConvexity = false;
-    calf_params.filterByColor = false;
-    calf_params.filterByCircularity = true;
-    calf_params.minCircularity = 0.2; //0.2
-    calf_params.maxCircularity = 0.7; //0.7
-    calf_params.filterByArea = true;
-    calf_params.minArea = 250; //250
-    calf_params.maxArea = 1200; //1200
-
-    cv::Ptr<cv::FeatureDetector> bison_detect = new cv::SimpleBlobDetector(bison_params);
-    cv::Ptr<cv::FeatureDetector> calf_detect = new cv::SimpleBlobDetector(calf_params);
-    bison_detect->create("BisonBlob");
-    calf_detect->create("CalfBlob");
-
-    LOG(INFO) << "Checking for blobs in: '" << img_filename << "'";
-    cv::Mat image = cv::imread(img_filename, CV_LOAD_IMAGE_COLOR);
-    //cv::GaussianBlur(image, image, cv::Size(0, 0), 5);
-
-    if (image.empty()) {
+    if (orignal_image.empty()) {
         LOG(FATAL) << "Image failed to load...";
     }
 
     cv::Mat ycc;
-    cv::cvtColor(image, ycc, CV_BGR2YCrCb);
+    cv::cvtColor(orignal_image, ycc, CV_BGR2YCrCb);
 
     std::vector<cv::Mat> ycc_channels;
     cv::split(ycc, ycc_channels);
-    cv::Mat lum = ycc_channels[0];
-    cv::Mat red = ycc_channels[1];
-    cv::Mat blu = ycc_channels[2];
+    lum = ycc_channels[0];
+    red = ycc_channels[1];
+    blu = ycc_channels[2];
 
-    cv::Mat thresh = red > 132;
-    cv::Mat calf = red > 141;
+    int bison_slider = 132;
+    int calf_slider = 141;
 
-    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(0,0));
-    cv::morphologyEx(thresh, thresh, cv::MORPH_OPEN, kernel);
-    cv::morphologyEx(thresh, thresh, cv::MORPH_CLOSE, kernel);
-    cv::morphologyEx(calf, calf, cv::MORPH_OPEN, kernel);
-    cv::morphologyEx(calf, calf, cv::MORPH_CLOSE, kernel);
+    cv::namedWindow(W_NAME, CV_GUI_EXPANDED);
+    cv::setMouseCallback(W_NAME, onMouseCallback);
+    cv::createButton("Show Boxes", toggleRects, NULL, CV_CHECKBOX,1);
+    cv::createTrackbar("Bison", "", &bison_slider, 255, onBisonSlider);
+    cv::createTrackbar("Calf", "", &calf_slider, 255, onCalfSlider);
+    cv::createButton("Clear Rectangles", clearRects);
+    cv::createButton("Run Crop", cropImage);
 
-    cv::Mat ycc_keypoints;
-    imwrite("total_bin.jpg", thresh);
-    imwrite("calf_bin.jpg", calf);
-
-    //Mask original
-    cv::Mat masked;
-    image.copyTo(masked, thresh);
-    imwrite("masked.jpg", masked);
-
-    // Loop to extract training data from the bison mask
-    /*
-    unsigned int inc = 0;
-    for (int r = 0; r < image.rows-33; r++) {
-        for (int c = 0; c < image.cols-33; c++) {
-            cv::Vec3f pixel = masked.at<cv::Vec3b>(r+16,c+16);
-            uchar blue = pixel[0];
-            uchar green = pixel[1];
-            uchar red = pixel[2];
-            if (blue > 0 || green > 0 || red > 0) {
-                cv::Rect crop_rect = cv::Rect(c, r, 32, 32);
-                LOG(INFO) << crop_rect;
-                cv::Mat crop_image(32, 32, CV_8UC3, cv::Scalar(0, 0, 0));
-                image(crop_rect).copyTo(crop_image);
-                imwrite("test/" + std::to_string(inc) + "_000.jpg", crop_image);
-                cv::Mat rotation_mat = getRotationMatrix2D(cv::Point(crop_image.rows/2,crop_image.cols/2), 90, 1);
-                warpAffine(crop_image, crop_image, rotation_mat, crop_image.size());
-                imwrite("test/" + std::to_string(inc) + "_090.jpg", crop_image);
-                warpAffine(crop_image, crop_image, rotation_mat, crop_image.size());
-                imwrite("test/" + std::to_string(inc) + "_180.jpg", crop_image);
-                warpAffine(crop_image, crop_image, rotation_mat, crop_image.size());
-                imwrite("test/" + std::to_string(inc) + "_270.jpg", crop_image);
-                inc++;
-            }
-        }
-    }
-    */
+    onBisonSlider(bison_slider, 0);
+    cv::waitKey(0);
 
     return 0;
 }

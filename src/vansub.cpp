@@ -16,8 +16,7 @@ VANSub::VANSub(
 
     this->initiated = false;
 
-    this->rows = rows;
-    this->cols = cols;
+    this->type = new VideoType(cv::Size(cols, rows));
     this->radius = radius;
     this->colors = colors;
     this->history = history;
@@ -28,16 +27,16 @@ VANSub::VANSub(
     this->masks = new std::vector<cv::Rect>();
     this->masks->push_back(cv::Rect(530, 420, 150, 50));
 
-    int sizes[] = {this->rows, this->cols, this->history};
+    int sizes[] = {this->type->getHeight(), this->type->getWidth(), this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
-    this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
-    this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
+    this->background_image = new cv::Mat(this->type->getSize(), CV_8U, cv::Scalar(0));
+    this->diff = new cv::Mat(this->type->getSize(), CV_32F, cv::Scalar(0));
 
     std::random_device rd;
     this->gen = new std::mt19937(rd());
     this->history_update = new std::uniform_int_distribution<int>(0, history-1);
-    //this->update_neighbor= new std::uniform_int_distribution<int>(0, 15);
-    this->update_neighbor= new std::uniform_int_distribution<int>(0, 100);
+    this->update_neighbor= new std::uniform_int_distribution<int>(0, 15);
+    //this->update_neighbor= new std::uniform_int_distribution<int>(0, 100);
     this->pick_neighbor = new std::uniform_int_distribution<int>(0, 7);
 }
 
@@ -57,6 +56,13 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     if (input_image.channels() == 3) {
         cv::cvtColor(input_image, input_image, CV_BGR2GRAY);
     }
+    LOG_IF(WARNING, input_image.rows != this->type->getHeight() || input_image.cols != this->type->getWidth()) << "Different size image: " << input_image.size() << " vs " << this->model->size();
+
+    // Mask
+    cv::rectangle(input_image, this->type->getTimestampRect(), cv::Scalar(0,0,0), CV_FILLED);
+    cv::rectangle(input_image, this->type->getWatermarkRect(), cv::Scalar(0,0,0), CV_FILLED);
+    // Equalization
+    //cv::equalizeHist(input_image, input_image);
 
     if (!this->initiated) {
         //cv::Rect random_init(100, 200, input_image.cols-200, input_image.rows-300);
@@ -163,7 +169,8 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         fgmask.create(input_image.size(), input_image.type());
 
         // Smooth mask (remove noise)
-        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4,4), cv::Point(0,0));
+        //cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4,4), cv::Point(0,0));
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(0,0));
         cv::morphologyEx(char_mat, char_mat, cv::MORPH_OPEN, kernel);
         cv::morphologyEx(char_mat, char_mat, cv::MORPH_CLOSE, kernel);
 
@@ -187,16 +194,15 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
         return;
     }
 
-    for (int r = 0; r < this->rows; r++) {
-        for (int c = 0; c < this->cols; c++) {
+    for (int r = 0; r < this->type->getHeight(); r++) {
+        for (int c = 0; c < this->type->getWidth(); c++) {
             this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,2) * this->color_expansion;
         }
     }
 
-    background_image.create(rows, cols, CV_8U);
+    background_image.create(this->type->getSize(), CV_8U);
     cv::Mat output = background_image.getMat();
     this->background_image->copyTo(output);
-    VLOG(1) << "Got background image";
 }
 
 void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {

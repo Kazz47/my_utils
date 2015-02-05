@@ -1,12 +1,13 @@
 #include "video_type.hpp"
 
+#include <opencv2/imgproc/imgproc.hpp>
+
 // Accessors
 VideoType::VideoType(const cv::Size &size) {
     this->size = size;
 
     loadType();
 }
-
 
 int VideoType::getWidth() {
     return this->size.width;
@@ -21,41 +22,41 @@ cv::Size VideoType::getSize() {
 }
 
 cv::Rect VideoType::getWatermarkRect() {
-    return this->watermarkRect;
+    return this->watermark_rect;
 }
 
 cv::Rect VideoType::getTimestampRect() {
-    return this->timestampRect;
+    return this->timestamp_rect;
 }
 
 // Functions
 
 cv::Mat VideoType::getMask() {
     cv::Mat mask(this->getHeight(), this->getWidth(), CV_8UC1, cv::Scalar(1));
-    cv::rectangle(this->mask, this->getTimestampRect(), cv::Scalar(0), CV_FILLED);
-    cv::rectangle(this->mask, this->getWatermarkRect(), cv::Scalar(0), CV_FILLED);
+    cv::rectangle(mask, this->getTimestampRect(), cv::Scalar(0), CV_FILLED);
+    cv::rectangle(mask, this->getWatermarkRect(), cv::Scalar(0), CV_FILLED);
     return mask;
 }
 
 void VideoType::drawZones(cv::Mat &frame, const cv::Scalar &color) {
-    cv::rectangle(frame, timestampRect, color);
-    cv::rectangle(frame, watermarkRect, color);
+    cv::rectangle(frame, timestamp_rect, color);
+    cv::rectangle(frame, watermark_rect, color);
 }
 
 // Private
 
 void VideoType::setWatermarkRect(const cv::Point &top_left, const cv::Point &bottom_right) {
-    this->watermarkRect = cv::Rect(top_left, bottom_right);
+    this->watermark_rect = cv::Rect(top_left, bottom_right);
 }
 
 void VideoType::setTimestampRect(const cv::Point &top_left, const cv::Point &bottom_right) {
-    this->timestampRect = cv::Rect(top_left, bottom_right);
+    this->timestamp_rect = cv::Rect(top_left, bottom_right);
 }
 
 // TODO This needs to be fixed to load in from a config file.
 void VideoType::loadType() {
     if(this->getWidth() == 704 && this->getHeight() == 480) {
-        cv::Point watermark_lt(12, 12);
+        cv::Point watermark_tl(12, 12);
         cv::Point watermark_br(90, 55);
         cv::Point timestamp_tl(520, 415);
         cv::Point timestamp_br(680, 470);

@@ -14,6 +14,7 @@ set(KOSUB_SOURCES
 set(VANSUB_SOURCES
     ${BSUB_SOURCES}
     vansub
+    video_type
 )
 
 set(SPLITTER_SOURCES

@@ -10,8 +10,11 @@
 // Name of the main program window
 static const std::string W_NAME = "WINDOW";
 
-cv::Mat orignal_image, mask;
+cv::Mat original_image, mask;
 cv::Mat lum, red, blu;
+
+int min_slider = 132;
+int max_slider = 141;
 
 // Drawing vars
 bool drawing = false;
@@ -32,11 +35,12 @@ std::string getDesc() {
 }
 
 void draw() {
-    cv::Mat masked;
-    orignal_image.copyTo(masked, mask);
+    cv::Mat temp_mask, masked;
+    cv::cvtColor(mask, temp_mask, CV_GRAY2BGR);
     for (cv::Rect *box : boxes) {
-        cv::rectangle(masked, *box, box_color, box_size);
+        cv::rectangle(temp_mask, *box, box_color, box_size);
     }
+    masked = original_image*0.5 + temp_mask*0.5;
     cv::imshow(W_NAME, masked);
 }
 
@@ -68,8 +72,10 @@ void onMouseCallback(int event, int x, int y, int flags, void *) {
     }
 }
 
-void onBisonSlider(int slider_value, void*) {
-    mask = red > slider_value;
+void onSlider(int slider_value, void*) {
+    cv::Mat max_mask = red <= max_slider;
+    cv::Mat min_mask = red >= min_slider;
+    cv::bitwise_and(max_mask, min_mask, mask);
 
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(0,0));
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
@@ -78,14 +84,10 @@ void onBisonSlider(int slider_value, void*) {
     draw();
 }
 
-void onCalfSlider(int slider_value, void*) {
-    return;
-}
-
 void cropImage(int, void*) {
     //Mask image
     cv::Mat masked;
-    orignal_image.copyTo(masked, mask);
+    original_image.copyTo(masked, mask);
     for (cv::Rect *box : boxes) {
         cv::rectangle(masked, *box, cv::Scalar(0,0,0), CV_FILLED);
     }
@@ -93,8 +95,8 @@ void cropImage(int, void*) {
 
     // Loop to extract training data from the bison mask
     unsigned int inc = 0;
-    for (int r = 0; r < orignal_image.rows-33; r++) {
-        for (int c = 0; c < orignal_image.cols-33; c++) {
+    for (int r = 0; r < original_image.rows-33; r++) {
+        for (int c = 0; c < original_image.cols-33; c++) {
             cv::Vec3f pixel = masked.at<cv::Vec3b>(r+16,c+16);
             uchar blue = pixel[0];
             uchar green = pixel[1];
@@ -105,7 +107,7 @@ void cropImage(int, void*) {
                 ss << "Cropping " << crop_rect;
                 cv::displayStatusBar(W_NAME, ss.str());
                 cv::Mat crop_image(32, 32, CV_8UC3, cv::Scalar(0, 0, 0));
-                orignal_image(crop_rect).copyTo(crop_image);
+                original_image(crop_rect).copyTo(crop_image);
                 imwrite("training_data/" + std::to_string(inc) + ".jpg", crop_image);
                 inc++;
             }
@@ -149,15 +151,15 @@ int main(int argc, char** argv) {
     // Read input values
     std::string img_filename = argv[1];
 
-    orignal_image = cv::imread(img_filename, CV_LOAD_IMAGE_COLOR);
+    original_image = cv::imread(img_filename, CV_LOAD_IMAGE_COLOR);
     //cv::GaussianBlur(original_image, image, cv::Size(0, 0), 5);
 
-    if (orignal_image.empty()) {
+    if (original_image.empty()) {
         LOG(FATAL) << "Image failed to load...";
     }
 
     cv::Mat ycc;
-    cv::cvtColor(orignal_image, ycc, CV_BGR2YCrCb);
+    cv::cvtColor(original_image, ycc, CV_BGR2YCrCb);
 
     std::vector<cv::Mat> ycc_channels;
     cv::split(ycc, ycc_channels);
@@ -165,18 +167,15 @@ int main(int argc, char** argv) {
     red = ycc_channels[1];
     blu = ycc_channels[2];
 
-    int bison_slider = 132;
-    int calf_slider = 141;
-
     cv::namedWindow(W_NAME, CV_GUI_EXPANDED);
     cv::setMouseCallback(W_NAME, onMouseCallback);
     cv::createButton("Show Boxes", toggleRects, NULL, CV_CHECKBOX,1);
-    cv::createTrackbar("Bison", "", &bison_slider, 255, onBisonSlider);
-    cv::createTrackbar("Calf", "", &calf_slider, 255, onCalfSlider);
+    cv::createTrackbar("Max", W_NAME, &max_slider, 255, onSlider);
+    cv::createTrackbar("Min", W_NAME, &min_slider, 255, onSlider);
     cv::createButton("Clear Rectangles", clearRects);
     cv::createButton("Run Crop", cropImage);
 
-    onBisonSlider(bison_slider, 0);
+    onSlider(max_slider, 0);
     cv::waitKey(0);
 
     return 0;

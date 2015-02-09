@@ -16,7 +16,8 @@ VANSub::VANSub(
 
     this->initiated = false;
 
-    this->type = new VideoType(cv::Size(cols, rows));
+    this->rows = rows;
+    this->cols = cols;
     this->radius = radius;
     this->colors = colors;
     this->history = history;
@@ -27,10 +28,10 @@ VANSub::VANSub(
     this->masks = new std::vector<cv::Rect>();
     this->masks->push_back(cv::Rect(530, 420, 150, 50));
 
-    int sizes[] = {this->type->getHeight(), this->type->getWidth(), this->history};
+    int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
-    this->background_image = new cv::Mat(this->type->getSize(), CV_8U, cv::Scalar(0));
-    this->diff = new cv::Mat(this->type->getSize(), CV_32F, cv::Scalar(0));
+    this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
+    this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     std::random_device rd;
     this->gen = new std::mt19937(rd());
@@ -56,13 +57,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     if (input_image.channels() == 3) {
         cv::cvtColor(input_image, input_image, CV_BGR2GRAY);
     }
-    LOG_IF(WARNING, input_image.rows != this->type->getHeight() || input_image.cols != this->type->getWidth()) << "Different size image: " << input_image.size() << " vs " << this->model->size();
-
-    // Mask
-    cv::rectangle(input_image, this->type->getTimestampRect(), cv::Scalar(0,0,0), CV_FILLED);
-    cv::rectangle(input_image, this->type->getWatermarkRect(), cv::Scalar(0,0,0), CV_FILLED);
-    // Equalization
-    //cv::equalizeHist(input_image, input_image);
+    LOG_IF(WARNING, input_image.rows != this->rows || input_image.cols != this->cols) << "Different size image: " << input_image.size() << " vs " << this->model->size();
 
     if (!this->initiated) {
         //cv::Rect random_init(100, 200, input_image.cols-200, input_image.rows-300);
@@ -194,13 +189,13 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
         return;
     }
 
-    for (int r = 0; r < this->type->getHeight(); r++) {
-        for (int c = 0; c < this->type->getWidth(); c++) {
+    for (int r = 0; r < this->rows; r++) {
+        for (int c = 0; c < this->cols; c++) {
             this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,2) * this->color_expansion;
         }
     }
 
-    background_image.create(this->type->getSize(), CV_8U);
+    background_image.create(this->rows, this->cols, CV_8U);
     cv::Mat output = background_image.getMat();
     this->background_image->copyTo(output);
 }

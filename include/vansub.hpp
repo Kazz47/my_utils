@@ -4,7 +4,6 @@
 #include <vector>
 #include <random>
 #include "bsub.hpp"
-#include "video_type.hpp"
 
 /**
  * van_2014_vibe background subtraction class.
@@ -26,7 +25,8 @@ private:
     const static int req_matches = 2;
     const static int max_colors = 256;
 
-    VideoType *type;
+    int rows;
+    int cols;
     int radius;
     int colors;
     int history;

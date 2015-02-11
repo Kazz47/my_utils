@@ -33,7 +33,7 @@ install:
  - git checkout 2.4
  - mkdir build
  - cd build
- - cmake ..
+ - cmake -DCMAKE_BUILD_TYPE=RELEASE -DBUILD_DOCS=OFF -DBUILD_EXAMPLES=OFF -DBUILD_opencv_java=OFF -DBUILD_TESTS=OFF -DBUILD_PERF_TESTS=OFF ..
  - make -j4
  - sudo make -j4 install
  - cd ../..

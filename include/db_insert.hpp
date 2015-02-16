@@ -17,7 +17,7 @@ public:
 
 private:
     MYSQL *db_conn;
-    void openEventFile(std::string event_filename, std::vector<std::vector<size_t>> &events);
+    void openEventFile(std::string event_filename, std::vector<std::vector<size_t>*> &events);
 };
 
 #endif //DB_INSERT_H

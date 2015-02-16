@@ -5,12 +5,16 @@
 #include <cmath>
 #include <fstream>
 
+/** Default Values **/
+static const int EVENT_ID = 32;
+
 /** Function Headers */
 void help();
 double calcMean(std::vector<double> vals);
 double calcVariance(std::vector<double> vals, const double mean);
-void openEventFile(std::string event_filename, std::vector<double> &vibe_vals, std::vector<double> &mog_vals);
-std::vector<std::pair<size_t,size_t>> calculateEventTimes(std::vector<double> &vals, double dist, int fps);
+void openTSVEventFile(std::string event_filename, std::vector<double> &vibe_vals, std::vector<double> &mog_vals);
+void openEventFile(std::string event_filename, std::vector<size_t> &event_times);
+std::vector<std::pair<size_t,size_t>> calculateEventTimes(std::vector<double> &vals, double dist, double fps);
 
 // TODO Update the help info
 void help() {
@@ -21,6 +25,12 @@ void help() {
     LOG(INFO) << "./wildlife_bgsub <video filename> <event filename>";
     LOG(INFO) << "for example: ./wildlife_bgsub video.avi events.dat";
     LOG(INFO) << "--------------------------------------------------------------------------";
+}
+
+int getVideoId(std::string path) {
+    int firstIndex = path.find_last_of("/\\");
+    int lastIndex = path.find_last_of(".");
+    return atoi(path.substr(firstIndex+1, lastIndex).c_str());
 }
 
 double calcMean(std::vector<double> vals) {
@@ -41,9 +51,7 @@ double calcVariance(std::vector<double> vals, const double mean) {
     return var;
 }
 
-void openEventFile(std::string event_filename, std::vector<double> &vibe_vals, std::vector<double> &mog_vals) {
-    LOG(INFO) << "Load event file: '" << event_filename << "'";
-
+void openTSVEventFile(std::string event_filename, std::vector<double> &vibe_vals, std::vector<double> &mog_vals) {
     std::ifstream infile(event_filename);
 
     std::string event_bool, vibe_val, mog_val;
@@ -60,6 +68,47 @@ void openEventFile(std::string event_filename, std::vector<double> &vibe_vals, s
     infile.close();
 }
 
+void openEventFile(std::string event_filename, std::vector<size_t> &event_times) {
+    std::ifstream infile(event_filename);
+
+    std::string event_id, time;
+
+    std::string line;
+    size_t temp;
+    while (std::getline(infile, line)) {
+        std::istringstream iss(line);
+        if (!(iss >> event_id >> time)) {
+            break;
+        }
+        temp = atoi(time.c_str());
+        event_times.push_back(temp);
+    }
+    infile.close();
+    LOG(INFO) << "Loaded " << event_times.size() << " event times.";
+}
+
+std::vector<std::pair<size_t,size_t>> calculateEventTimes(std::vector<double> &vals, double dist, double fps) {
+    std::vector<std::pair<size_t,size_t>> output;
+
+    double mean = calcMean(vals);
+    double stdev = sqrt(calcVariance(vals, mean));
+
+    bool event_happening = false;
+    size_t start_time = 0;
+    LOG(INFO) << "Mean: " << mean;
+    LOG(INFO) << "Stdev * Dist: " << dist * stdev;
+    for (size_t time = 0; time < vals.size(); time++) {
+        if (vals[time] >= mean + (dist * stdev)) {
+            event_happening = true;
+            start_time = time;
+        } else if (event_happening && vals[time] < mean + (dist * stdev)) {
+            event_happening = false;
+            output.push_back(std::pair<size_t,size_t>(start_time/fps, time/fps));
+        }
+    }
+    return output;
+}
+
 /**
  * @function main
  */
@@ -72,57 +121,51 @@ int main(int argc, char* argv[])
     help();
 
     //check for the input parameter correctness
-    if(argc != 2) {
+    if(argc != 3) {
         LOG(ERROR) << "Incorret input list";
         return EXIT_FAILURE;
     }
 
-    std::string event_filename(argv[1]);
+    std::string tsv_event_filename(argv[1]);
+    std::string input_event_filename(argv[2]);
 
+    int video_id = getVideoId(input_event_filename);
+
+    std::vector<size_t> event_times;
     std::vector<double> vibe_vals;
     std::vector<double> mog_vals;
 
-    openEventFile(event_filename, vibe_vals, mog_vals);
+    double fps = 10;
 
-    std::vector<std::pair<size_t,size_t>> vibe_events = calculateEventTimes(vibe_vals, 1, 10);
-    std::vector<std::pair<size_t,size_t>> mog_events = calculateEventTimes(mog_vals, 1, 10);
+    openEventFile(input_event_filename, event_times);
+    openTSVEventFile(tsv_event_filename, vibe_vals, mog_vals);
+
+    std::vector<std::pair<size_t,size_t>> vibe_events = calculateEventTimes(vibe_vals, 3, fps);
+    std::vector<std::pair<size_t,size_t>> mog_events = calculateEventTimes(mog_vals, 3, fps);
 
     // Open files
     std::ofstream vibe_event_file("significant_vibe_events.dat");
     std::ofstream mog_event_file("significant_mog_events.dat");
 
+    double range = 30;
+    double matches = 0;
     for (std::pair<size_t,size_t> pair : vibe_events) {
-        vibe_event_file << pair.first << '\t' << pair.second << std::endl;
+        vibe_event_file << EVENT_ID << "," << video_id << "," << pair.first << "," << pair.second << std::endl;
     }
+    LOG(INFO) << "ViBe Total: " << vibe_events.size();
+    LOG(INFO) << "ViBe Accuracy: " << matches/event_times.size();
 
+    matches = 0;
     for (std::pair<size_t,size_t> pair : mog_events) {
-        mog_event_file << pair.first << '\t' << pair.second << std::endl;
+        mog_event_file << EVENT_ID << "," << video_id << "," << pair.first << "," << pair.second << std::endl;
     }
+    LOG(INFO) << "MOG Total: " << mog_events.size();
+    LOG(INFO) << "MOG Accuracy: " << matches/event_times.size();
 
     // Close files
     vibe_event_file.close();
     mog_event_file.close();
 
     return EXIT_SUCCESS;
-}
-
-std::vector<std::pair<size_t,size_t>> calculateEventTimes(std::vector<double> &vals, double dist, int fps) {
-    std::vector<std::pair<size_t,size_t>> output;
-
-    double mean = calcMean(vals);
-    double stdev = sqrt(calcVariance(vals, mean));
-
-    bool event_happening = false;
-    size_t start_time = 0;
-    for (size_t time = 0; time < vals.size(); time++) {
-        if (vals[time] >= mean + (dist * stdev)) {
-            event_happening = true;
-            start_time = time;
-        } else if (event_happening && vals[time] < mean + (dist * stdev)) {
-            event_happening = false;
-            output.push_back(std::pair<size_t,size_t>(start_time/fps, time/fps));
-        }
-    }
-    return output;
 }
 

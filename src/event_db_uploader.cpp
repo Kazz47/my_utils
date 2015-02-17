@@ -64,7 +64,8 @@ void DBInsert::parseFile(std::string filename) {
     std::vector<std::vector<size_t>*> events;
     openEventFile(filename, events);
 
-    for (std::vector<size_t> *event : events) {
+    for (size_t i = 0; i < events.size(); i++) {
+        std::vector<size_t> *event = events[i];
         std::ostringstream insert_event_query;
         insert_event_query << "INSERT INTO computed_events VALUES (NULL, " << 2 << ", " << event->at(0) << ", " << event->at(1) << ", 0, " << event->at(2) << ", " << event->at(3) << ");";
         LOG(INFO) << insert_event_query.str();

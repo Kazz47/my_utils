@@ -37,8 +37,8 @@ std::string getDesc() {
 void draw() {
     cv::Mat temp_mask, masked;
     cv::cvtColor(mask, temp_mask, CV_GRAY2BGR);
-    for (cv::Rect *box : boxes) {
-        cv::rectangle(temp_mask, *box, box_color, box_size);
+    for (size_t i = 0; i < boxes.size(); i++) {
+        cv::rectangle(temp_mask, *(boxes[i]), box_color, box_size);
     }
     masked = original_image*0.5 + temp_mask*0.5;
     cv::imshow(W_NAME, masked);
@@ -88,13 +88,13 @@ void cropImage(int, void*) {
     //Mask image
     cv::Mat masked;
     original_image.copyTo(masked, mask);
-    for (cv::Rect *box : boxes) {
-        cv::rectangle(masked, *box, cv::Scalar(0,0,0), CV_FILLED);
+    for (size_t i = 0; i < boxes.size(); i++) {
+        cv::rectangle(masked, *(boxes[i]), cv::Scalar(0,0,0), CV_FILLED);
     }
     imwrite("masked.jpg", masked);
 
     // Loop to extract training data from the bison mask
-    unsigned int inc = 0;
+    long long unsigned int inc = 0;
     for (int r = 0; r < original_image.rows-33; r++) {
         for (int c = 0; c < original_image.cols-33; c++) {
             cv::Vec3f pixel = masked.at<cv::Vec3b>(r+16,c+16);
@@ -108,12 +108,14 @@ void cropImage(int, void*) {
                 cv::displayStatusBar(W_NAME, ss.str());
                 cv::Mat crop_image(32, 32, CV_8UC3, cv::Scalar(0, 0, 0));
                 original_image(crop_rect).copyTo(crop_image);
-                imwrite("training_data/" + std::to_string(inc) + ".jpg", crop_image);
+                std::string num_images = std::to_string(inc);
+                imwrite("training_data/" + num_images + ".jpg", crop_image);
                 inc++;
             }
         }
     }
-    cv::displayStatusBar(W_NAME, "Created " + std::to_string(inc) + " images.", 60000);
+    std::string num_images = std::to_string(inc);
+    cv::displayStatusBar(W_NAME, "Created " + num_images + " images.", 60000);
 }
 
 void toggleRects(int checked, void*) {
@@ -128,8 +130,8 @@ void toggleRects(int checked, void*) {
 }
 
 void clearRects(int, void*) {
-    for (cv::Rect *box : boxes) {
-        delete(box);
+    for (size_t i = 0; i < boxes.size(); i++) {
+        delete(boxes[i]);
     }
     boxes.clear();
     draw();

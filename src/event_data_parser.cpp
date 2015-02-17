@@ -35,16 +35,16 @@ int getVideoId(std::string path) {
 
 double calcMean(std::vector<double> vals) {
     double val = 0;
-    for (double x : vals) {
-        val += x;
+    for (size_t i = 0; i < vals.size(); i++) {
+        val += vals[i];
     }
     return val/vals.size();
 }
 
 double calcVariance(std::vector<double> vals, const double mean) {
     double var = 0;
-    for (double x : vals) {
-        double diff = x - mean;
+    for (size_t i = 0; i < vals.size(); i++) {
+        double diff = vals[i] - mean;
         var = diff * diff;
     }
     var = var/vals.size();
@@ -149,14 +149,16 @@ int main(int argc, char* argv[])
 
     double range = 30;
     double matches = 0;
-    for (std::pair<size_t,size_t> pair : vibe_events) {
+    for (size_t i = 0; i < vibe_events.size(); i++) {
+        std::pair<size_t,size_t> pair = vibe_events[i];
         vibe_event_file << EVENT_ID << "," << video_id << "," << pair.first << "," << pair.second << std::endl;
     }
     LOG(INFO) << "ViBe Total: " << vibe_events.size();
     LOG(INFO) << "ViBe Accuracy: " << matches/event_times.size();
 
     matches = 0;
-    for (std::pair<size_t,size_t> pair : mog_events) {
+    for (size_t i = 0; i < mog_events.size(); i++) {
+        std::pair<size_t,size_t> pair = mog_events[i];
         mog_event_file << EVENT_ID << "," << video_id << "," << pair.first << "," << pair.second << std::endl;
     }
     LOG(INFO) << "MOG Total: " << mog_events.size();

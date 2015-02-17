@@ -44,16 +44,16 @@ void help() {
 
 double calcMean(std::vector<double> vals) {
     double val = 0;
-    for (double x : vals) {
-        val += x;
+    for (size_t i = 0; i < vals.size(); i++) {
+        val += vals[i];
     }
     return val/vals.size();
 }
 
 double calcVariance(std::vector<double> vals, const double mean) {
     double var = 0;
-    for (double x : vals) {
-        double diff = x - mean;
+    for (size_t i = 0; i < vals.size(); i++) {
+        double diff = vals[i] - mean;
         var = diff * diff;
     }
     var = var/vals.size();

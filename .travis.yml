@@ -12,6 +12,10 @@ before_install:
  - sudo apt-get update
 
 install:
+#Upgrade
+ - sudo apt-get upgrade
+#Boost
+ - sudo apt-get install libboost-dev
 #Google Log
  - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog
  - cd glog

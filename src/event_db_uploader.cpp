@@ -43,20 +43,17 @@ DBInsert::~DBInsert() {
     delete this->db_conn;
 }
 
-void DBInsert::openEventFile(std::string event_filename, std::vector<std::vector<size_t>> &events) {
+void DBInsert::openEventFile(std::string event_filename, std::vector<std::vector<size_t>*> &events) {
     std::ifstream infile(event_filename);
 
     std::string line, event_id_str, video_id_str, start_s_str, end_s_str;
-    std::vector<size_t> data;
-    while (std::getline(infile, line, ',')) {
+    while (std::getline(infile, line)) {
         std::istringstream iss(line);
-        if (!(iss >> event_id_str >> video_id_str >> start_s_str >> end_s_str)) {
-            break;
+        std::string field;
+        std::vector<size_t> *data = new std::vector<size_t>();
+        while (std::getline(iss, field, ',')) {
+            data->push_back(atoi(field.c_str()));
         }
-        data.push_back(atoi(event_id_str.c_str()));
-        data.push_back(atoi(video_id_str.c_str()));
-        data.push_back(atoi(start_s_str.c_str()));
-        data.push_back(atoi(end_s_str.c_str()));
         events.push_back(data);
     }
     infile.close();
@@ -64,22 +61,17 @@ void DBInsert::openEventFile(std::string event_filename, std::vector<std::vector
 }
 
 void DBInsert::parseFile(std::string filename) {
-    std::vector<std::vector<size_t>> events;
+    std::vector<std::vector<size_t>*> events;
     openEventFile(filename, events);
 
-    std::ostringstream full_video_query;
-    full_video_query << "SELECT species_id, location_id FROM video_2 WHERE id = 6511;";
+    for (std::vector<size_t> *event : events) {
+        std::ostringstream insert_event_query;
+        insert_event_query << "INSERT INTO computed_events VALUES (NULL, " << 2 << ", " << event->at(0) << ", " << event->at(1) << ", 0, " << event->at(2) << ", " << event->at(3) << ");";
+        LOG(INFO) << insert_event_query.str();
+        mysql_query_check(this->db_conn, insert_event_query.str());
+    }
 
-    mysql_query_check(this->db_conn, full_video_query.str());
-    MYSQL_RES *video_result = mysql_store_result(this->db_conn);
-
-    LOG(INFO) << " got video result";
-
-    MYSQL_ROW full_video_row = mysql_fetch_row(video_result);
-    std::string species_id(full_video_row[0]);
-    std::string location_id(full_video_row[1]);
-
-    mysql_free_result(video_result);
+    LOG(INFO) << "Added events to DB";
 }
 
 int main(int argc, char** argv) {

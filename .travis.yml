@@ -13,7 +13,7 @@ before_install:
 
 install:
 #Upgrade
- - sudo apt-get upgrade
+# - sudo apt-get upgrade
 #Boost
  - sudo apt-get install libboost-dev
 #Google Log

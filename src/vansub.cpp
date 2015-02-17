@@ -35,10 +35,10 @@ VANSub::VANSub(
 
     std::random_device rd;
     this->gen = new std::mt19937(rd());
-    this->history_update = new std::uniform_int_distribution<int>(0, history-1);
-    this->update_neighbor= new std::uniform_int_distribution<int>(0, 15);
-    //this->update_neighbor= new std::uniform_int_distribution<int>(0, 100);
-    this->pick_neighbor = new std::uniform_int_distribution<int>(0, 7);
+    this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
+    this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 15);
+    //this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 100);
+    this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
 }
 
 //Only supports 8-bit images
@@ -201,8 +201,8 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
 }
 
 void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
-    std::uniform_int_distribution<int> random_row(0, image.rows-1);
-    std::uniform_int_distribution<int> random_col(0, image.cols-1);
+    boost::random::uniform_int_distribution<int> random_row(0, image.rows-1);
+    boost::random::uniform_int_distribution<int> random_col(0, image.cols-1);
     for (int r = 0; r < image.rows; r++) {
         for (int c = 0; c < image.cols; c++) {
             if (!random_init.contains(cv::Point(c,r))) {

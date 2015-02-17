@@ -36,10 +36,10 @@ private:
     cv::Mat *background_image;
 
     inline float densityNeighborhood(cv::Mat &image, const int row, const int col, const int color, const int radius) {
-        const unsigned int row_start = std::max(row - radius, 0);
-        const unsigned int col_start = std::max(col - radius, 0);
-        const unsigned int row_end = std::min(row + radius, image.rows);
-        const unsigned int col_end = std::min(col + radius, image.cols);
+        const int row_start = std::max(row - radius, 0);
+        const int col_start = std::max(col - radius, 0);
+        const int row_end = std::min(row + radius, image.rows);
+        const int col_end = std::min(col + radius, image.cols);
 
         float density = 0;
         for (int r = row_start; r < row_end; r++) {

@@ -35,6 +35,7 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 # Find Packages
+find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
 

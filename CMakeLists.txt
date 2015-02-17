@@ -37,6 +37,7 @@ endif(DOXYGEN_FOUND)
 # Find Packages
 find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
+find_package(Boost REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

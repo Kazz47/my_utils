@@ -16,6 +16,7 @@ install:
 # - sudo apt-get upgrade
 #Boost
  - sudo apt-get install libboost-dev
+ - sudo apt-get install libboost-random-dev
 #Google Log
  - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog
  - cd glog

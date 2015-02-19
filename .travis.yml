@@ -16,7 +16,7 @@ install:
 #Upgrade
 # - sudo apt-get --yes --force-yes upgrade
 #Boost
- - sudo apt-get install libboost1.55-all-dev libboost1.55-random-dev
+ - sudo apt-get install libboost1.55-all-dev libboost-random1.55-dev
  - dpkg -s libboost-dev | grep 'Version'
 #Google Log
  - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog

@@ -10,13 +10,13 @@ compiler:
 
 before_install:
  - sudo apt-get update
- - sudo add-apt-repository --yes ppa:boost-latest/ppa
 
 install:
 #Upgrade
 # - sudo apt-get --yes --force-yes upgrade
 #Boost
- - sudo apt-get install libboost1.54-all-dev libboost-random1.54-dev
+ - sudo apt-get install libboost-all-dev libboost-random-dev
+ - dpkg -s libboost-dev | grep 'Version'
 #Google Log
  - svn checkout http://google-glog.googlecode.com/svn/trunk/ glog
  - cd glog

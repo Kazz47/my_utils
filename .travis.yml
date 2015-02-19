@@ -10,7 +10,7 @@ compiler:
 
 before_install:
  - sudo add-apt-repository --yes "deb http://ppa.launchpad.net/boost-latest/ppa/ubuntu precise main"
- - sudo add-apt-repossitory --yes "deb-src http://ppa.launchpad.net/boost-latest/ppa/ubuntu precise main"
+ - sudo add-apt-repository --yes "deb-src http://ppa.launchpad.net/boost-latest/ppa/ubuntu precise main"
  - sudo apt-get update
 
 install:

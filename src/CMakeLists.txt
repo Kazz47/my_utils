@@ -88,7 +88,7 @@ target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIB
 target_link_libraries(wildlife_video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(background_subtract bsub_shared kosub_shared vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(wildlife_bgsub vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(event_data_parser ${GLOG_LIBRARIES})
+target_link_libraries(event_data_parser ${GLOG_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(event_db_uploader ${GLOG_LIBRARIES} ${MYSQL_LIBRARIES})
 target_link_libraries(blob_count ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(image_crop ${GLOG_LIBRARIES} ${OpenCV_LIBS})

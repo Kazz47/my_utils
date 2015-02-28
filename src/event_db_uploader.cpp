@@ -67,7 +67,12 @@ void DBInsert::parseFile(std::string filename) {
     for (size_t i = 0; i < events.size(); i++) {
         std::vector<size_t> *event = events[i];
         std::ostringstream insert_event_query;
-        insert_event_query << "INSERT INTO computed_events VALUES (NULL, " << 2 << ", " << event->at(0) << ", " << event->at(1) << ", 0, " << event->at(2) << ", " << event->at(3) << ");";
+        size_t video_id = event->at(0);
+        size_t event_id = event->at(1);
+        size_t algorithm_id = event->at(2);
+        size_t start_time_s = event->at(3);
+        size_t end_time_s = event->at(4);
+        insert_event_query << "INSERT INTO computed_events VALUES (NULL, " << algorithm_id << ", " << event_id << ", " << video_id << ", 1, " << start_time_s << ", " << end_time_s << ");";
         LOG(INFO) << insert_event_query.str();
         mysql_query_check(this->db_conn, insert_event_query.str());
     }
@@ -80,7 +85,7 @@ int main(int argc, char** argv) {
     google::InitGoogleLogging(argv[0]);
 
     if(argc != 2) {
-        LOG(ERROR) << "Incorret input list";
+        LOG(ERROR) << "Incorret input list, requires a CSV input file of events.";
         return EXIT_FAILURE;
     }
 

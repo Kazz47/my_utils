@@ -23,11 +23,11 @@ std::vector<std::pair<size_t,size_t>> calculateEventTimes(std::vector<double> &v
 // TODO Update the help info
 void help() {
     LOG(INFO) << "--------------------------------------------------------------------------";
-    LOG(INFO) << "This program shows how to use background subtraction methods provided by ";
-    LOG(INFO) << " OpenCV. You can process both videos (-vid) and images (-img).";
+    LOG(INFO) << "This takes a TSV file. Each row should consist of the video ID,";
+    LOG(INFO) << "a boolean indicating an expert observation, and the algorithm outputs.";
     LOG(INFO) << "Usage:";
-    LOG(INFO) << "./wildlife_bgsub <video filename> <event filename>";
-    LOG(INFO) << "for example: ./wildlife_bgsub video.avi events.dat";
+    LOG(INFO) << "./event_data_parser <tsv time file>";
+    LOG(INFO) << "for example: ./event_data_parser data.tsv";
     LOG(INFO) << "--------------------------------------------------------------------------";
 }
 
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
     help();
 
     //check for the input parameter correctness
-    if(argc != 3) {
+    if(argc != 2) {
         LOG(ERROR) << "Incorret input list";
         return EXIT_FAILURE;
     }

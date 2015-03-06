@@ -2,6 +2,7 @@
 
 #include <glog/logging.h>
 
+//C++
 #include <fstream>
 
 #define mysql_query_check(conn, query) __mysql_check (conn, query, __FILE__, __LINE__)
@@ -60,7 +61,7 @@ void DBInsert::openEventFile(std::string event_filename, std::vector<std::vector
     LOG(INFO) << "Loaded " << events.size() << " events.";
 }
 
-void DBInsert::parseFile(std::string filename) {
+void DBInsert::parseFile(const int version_id, std::string filename) {
     std::vector<std::vector<size_t>*> events;
     openEventFile(filename, events);
 
@@ -72,7 +73,7 @@ void DBInsert::parseFile(std::string filename) {
         size_t algorithm_id = event->at(2);
         size_t start_time_s = event->at(3);
         size_t end_time_s = event->at(4);
-        insert_event_query << "INSERT INTO computed_events VALUES (NULL, " << algorithm_id << ", " << event_id << ", " << video_id << ", 1, " << start_time_s << ", " << end_time_s << ");";
+        insert_event_query << "INSERT INTO computed_events VALUES (NULL, " << algorithm_id << ", " << event_id << ", " << video_id << ", " << version_id << ", " << start_time_s << ", " << end_time_s << ");";
         LOG(INFO) << insert_event_query.str();
         mysql_query_check(this->db_conn, insert_event_query.str());
     }
@@ -84,15 +85,16 @@ int main(int argc, char** argv) {
     FLAGS_logtostderr = 1;
     google::InitGoogleLogging(argv[0]);
 
-    if(argc != 2) {
-        LOG(ERROR) << "Incorret input list, requires a CSV input file of events.";
+    if(argc != 3) {
+        LOG(ERROR) << "Incorret input list, requires version number and a CSV input file of events.";
         return EXIT_FAILURE;
     }
 
-    std::string csv_event_filename(argv[1]);
+    std::string version_id_str(argv[1]);
+    std::string csv_event_filename(argv[2]);
 
     DBInsert database;
-    database.parseFile(csv_event_filename);
+    database.parseFile(std::stoi(version_id_str.c_str()), csv_event_filename);
 
     return EXIT_SUCCESS;
 }

@@ -13,7 +13,7 @@ class DBInsert {
 public:
     DBInsert();
     ~DBInsert();
-    void parseFile(std::string filename);
+    void parseFile(const int version_id, std::string filename);
 
 private:
     MYSQL *db_conn;

@@ -74,7 +74,7 @@ double calcVariance(std::vector<double> vals, const double mean) {
 }
 
 std::vector<size_t>* openEventFile(const int video_id, const double fps) {
-    std::string video_id_str(std::to_string(video_id));
+    std::string video_id_str(std::to_string(static_cast<long long>(video_id)));
     std::string command_curl = "curl " + DOWNLOAD_PREFIX +  video_id_str + " -s -o " + video_id_str + ".dat";
 
     system(command_curl.c_str());
@@ -175,7 +175,7 @@ void processVideo(std::string vid_filename) {
     VideoType type(cv::Size(cols, rows));
 
     int video_id = getVideoId(vid_filename);
-    std::string video_id_str = std::to_string(video_id);
+    std::string video_id_str = std::to_string(static_cast<long long>(video_id));
     std::vector<size_t> *event_times = openEventFile(video_id, 10);
     //std::vector<double> vibe_window_vals;
     //std::vector<double> mog_window_vals;

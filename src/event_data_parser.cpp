@@ -2,6 +2,7 @@
 #include <glog/logging.h>
 
 //C++
+#include <string>
 #include <cmath>
 #include <fstream>
 
@@ -115,7 +116,7 @@ int main(int argc, char* argv[])
 
     int video_id;
     openTSVEventFile(tsv_event_filename, video_id, vibe_vals, mog_vals);
-    std::string video_id_str = std::to_string(video_id);
+    std::string video_id_str = std::to_string(static_cast<long long>(video_id));
 
     std::vector<std::pair<size_t,size_t>> vibe_events = calculateEventTimes(vibe_vals, 3, fps);
     std::vector<std::pair<size_t,size_t>> mog_events = calculateEventTimes(mog_vals, 3, fps);

@@ -17,6 +17,9 @@
 #include "video_type.hpp"
 #include "vansub.hpp"
 
+//Defines
+#define GUI
+
 /** Staic Vars **/
 static const double ALPHA = 0.1;
 static const std::string DOWNLOAD_PREFIX = "http://volunteer.cs.und.edu/csg/wildlife_kgoehner/video_interesting_events.php?video_id=";
@@ -120,13 +123,13 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    /*
+#ifdef GUI
     //create GUI windows
     cv::namedWindow("Frame", CV_GUI_NORMAL);
     cv::namedWindow("Model", CV_GUI_NORMAL);
     cv::namedWindow("FG Mask VIBE", CV_GUI_NORMAL);
     cv::namedWindow("FG Mask MOG", CV_GUI_NORMAL);
-    */
+#endif
 
     //Create Output Directory
 
@@ -140,10 +143,11 @@ int main(int argc, char* argv[])
     vibe_file.close();
     mog_file.close();
 
-    /*
+#ifdef GUI
     //destroy GUI windows
     cv::destroyAllWindows();
-    */
+#endif
+
     return EXIT_SUCCESS;
 }
 
@@ -218,7 +222,7 @@ void processVideo(std::string vid_filename) {
         pVIBE->operator()(frame, fgMaskVIBE, 0.1);
         pMOG->operator()(frame, fgMaskMOG, 0.001);
 
-        /*
+#ifdef GUI
         cv::Mat model;
         pVIBE->getBackgroundImage(model);
 
@@ -231,7 +235,7 @@ void processVideo(std::string vid_filename) {
         imshow("FG Mask MOG", fgMaskMOG);
         //get the input from the keyboard
         cv::waitKey(5);
-        */
+#endif
 
         //Count white pixels
         double vibe_white = 0;

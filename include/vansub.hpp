@@ -44,8 +44,8 @@ private:
     cv::Mat *background_image;
 
     std::mt19937 *gen;
+    boost::random::uniform_real_distribution<float> *update;
     boost::random::uniform_int_distribution<int> *history_update;
-    boost::random::uniform_int_distribution<int> *update_neighbor;
     boost::random::uniform_int_distribution<int> *pick_neighbor;
     /*
     std::uniform_int_distribution<int> *history_update;
@@ -54,6 +54,7 @@ private:
     */
 
     void initiateModel(cv::Mat &image, cv::Rect &random_init);
+    void updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor = true);
 };
 
 #endif //VANSUB_H

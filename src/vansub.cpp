@@ -35,21 +35,79 @@ VANSub::VANSub(
 
     std::random_device rd;
     this->gen = new std::mt19937(rd());
+    this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
-    this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 15);
     //this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 100);
     this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
-}
-
-//Only supports 8-bit images
-void VANSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
-    this->apply(image, fgmask, learning_rate);
 }
 
 VANSub::~VANSub() {
     delete model;
     delete background_image;
     delete diff;
+}
+
+void VANSub::updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor) {
+    // Add pixel value to background model.
+    float rng_update = (*(this->update))(*(this->gen));
+    if (rng_update <= 1.0/16.0) {
+        int pos = (*(this->history_update))(*(this->gen));
+        LOG_IF(ERROR, pos >= this->history) << "RNG Error";
+        this->model->at<unsigned char>(r,c,pos) = val;
+        if (update_neighbor) {
+            int neighbor = (*(this->pick_neighbor))(*(this->gen));
+            switch(neighbor) {
+                case 0:
+                    if (r > 1 && c > 1) {
+                        updateModel(r-1, c-1, val, false);
+                    }
+                    break;
+                case 1:
+                    if (r > 1) {
+                        updateModel(r-1, c, val, false);
+                    }
+                    break;
+                case 2:
+                    if (r > 1 && c < this->cols - 1) {
+                        updateModel(r-1, c+1, val, false);
+                    }
+                    break;
+                case 3:
+                    if (c > 1) {
+                        updateModel(r, c-1, val, false);
+                    }
+                    break;
+                case 4:
+                    if (c < this->cols - 1) {
+                        updateModel(r, c+1, val, false);
+                    }
+                    break;
+                case 5:
+                    if (r < this->rows - 1 && c > 1) {
+                        updateModel(r+1, c-1, val, false);
+                    }
+                    break;
+                case 6:
+                    if (r < this->rows - 1) {
+                        updateModel(r+1, c, val, false);
+                    }
+                    break;
+                case 7:
+                    if (r < this->rows - 1 && c < this->cols - 1) {
+                        updateModel(r+1, c+1, val, false);
+                    }
+                    break;
+                default:
+                    LOG(ERROR) << "Unknown case selected for neightbor update.";
+                    break;
+            }
+        }
+    }
+}
+
+//Only supports 8-bit images
+void VANSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
+    this->apply(image, fgmask, learning_rate);
 }
 
 void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
@@ -84,62 +142,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
             if (matches >= req_matches) { // Background
                 // Set foreground mask to zero.
                 diff->at<float>(r,c) = 0.0;
-
-                // Add pixel value to background model.
-                int pos = (*(this->history_update))(*(this->gen));
-                LOG_IF(ERROR, pos >= this->history) << "RNG Error";
-                model->at<unsigned char>(r,c,pos) = input_val;
-
-                // Randomly add value to neighbor pixel
-                // TODO Make this a function
-                int rng_update = (*(this->update_neighbor))(*(this->gen));
-                if (rng_update == 0) {
-                    int neighbor = (*(this->pick_neighbor))(*(this->gen));
-                    int pos = (*(this->history_update))(*(this->gen));
-                    LOG_IF(ERROR, pos >= this->history) << "RNG Error";
-                    switch(neighbor) {
-                        case 0:
-                            if (r > 1 && c > 1) {
-                                model->at<unsigned char>(r-1,c-1,pos) = input_val;
-                            }
-                            break;
-                        case 1:
-                            if (r > 1) {
-                                model->at<unsigned char>(r-1,c,pos) = input_val;
-                            }
-                            break;
-                        case 2:
-                            if (r > 1 && c < input_image.cols - 1) {
-                                model->at<unsigned char>(r-1,c+1,pos) = input_val;
-                            }
-                            break;
-                        case 3:
-                            if (c > 1) {
-                                model->at<unsigned char>(r,c-1,pos) = input_val;
-                            }
-                            break;
-                        case 4:
-                            if (c < input_image.cols - 1) {
-                                model->at<unsigned char>(r,c+1,pos) = input_val;
-                            }
-                            break;
-                        case 5:
-                            if (r < input_image.rows - 1 && c > 1) {
-                                model->at<unsigned char>(r+1,c-1,pos) = input_val;
-                            }
-                            break;
-                        case 6:
-                            if (r < input_image.rows - 1) {
-                                model->at<unsigned char>(r+1,c,pos) = input_val;
-                            }
-                            break;
-                        case 7:
-                            if (r < input_image.rows - 1 && c < input_image.cols - 1) {
-                                model->at<unsigned char>(r+1,c+1,pos) = input_val;
-                            }
-                            break;
-                    }
-                }
+                updateModel(r, c, input_val);
             } else { // Foreground
                 /*
                 int rng_update = (*(this->absorb_foreground))(*(this->gen));

@@ -14,7 +14,11 @@ set(KOSUB_SOURCES
 set(VANSUB_SOURCES
     ${BSUB_SOURCES}
     vansub
-    video_type
+)
+
+set(HOFSUB_SOURCES
+    ${BSUB_SOURCES}
+    hofsub
 )
 
 set(SPLITTER_SOURCES
@@ -43,6 +47,7 @@ set(BSUB_TEST_SOURCES
 
 set(WILDLIFE_BGSUB_SOURCES
     wildlife_bgsub
+    video_type
 )
 
 set(EVENT_DATA_PARSER_SOURCES
@@ -67,6 +72,9 @@ add_library(kosub_shared SHARED ${KOSUB_SOURCES})
 add_library(vansub_static STATIC ${VANSUB_SOURCES})
 add_library(vansub_shared SHARED ${VANSUB_SOURCES})
 
+add_library(hofsub_static STATIC ${HOFSUB_SOURCES})
+add_library(hofsub_shared SHARED ${HOFSUB_SOURCES})
+
 add_executable(video_splitter ${SPLITTER_SOURCES})
 add_executable(wildlife_video_splitter ${WILDLIFE_SPLITTER_SOURCES})
 add_executable(background_subtract ${BSUB_TEST_SOURCES})
@@ -87,7 +95,7 @@ target_link_libraries(vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(wildlife_video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(background_subtract bsub_shared kosub_shared vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(wildlife_bgsub vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(wildlife_bgsub vansub_shared hofsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
 target_link_libraries(event_data_parser ${GLOG_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(event_db_uploader ${GLOG_LIBRARIES} ${MYSQL_LIBRARIES})
 target_link_libraries(blob_count ${GLOG_LIBRARIES} ${OpenCV_LIBS})

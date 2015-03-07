@@ -8,7 +8,7 @@
 HOFSub::HOFSub(
         const int rows,
         const int cols,
-        const int radius,
+        const int threshold,
         const int colors,
         const int history
         ) {
@@ -18,41 +18,98 @@ HOFSub::HOFSub(
 
     this->rows = rows;
     this->cols = cols;
-    this->radius = radius;
     this->colors = colors;
     this->history = history;
 
-    this->color_reduction = static_cast<float>(this->colors)/this->max_colors;
-    this->color_expansion = static_cast<float>(this->max_colors)/this->colors;
-
-    this->masks = new std::vector<cv::Rect>();
-    this->masks->push_back(cv::Rect(530, 420, 150, 50));
+    this->color_reduction = static_cast<float>(this->colors)/this->MAX_COLORS;
+    this->color_expansion = static_cast<float>(this->MAX_COLORS)/this->colors;
 
     int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
+    this->decision_distance = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
+    this->threshold = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(threshold));
+    this->update_val = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(UPDATE_MIN));
     this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
-    this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
+    this->mask= new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     std::random_device rd;
     this->gen = new std::mt19937(rd());
+    this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
-    this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 15);
-    //this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 100);
     this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
 }
 
+HOFSub::~HOFSub() {
+    delete this->model;
+    delete this->threshold;
+    delete this->mask;
+    delete this->background_image;
+}
+
+void HOFSub::updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor) {
+    // Add pixel value to background model.
+    float rng_update = (*(this->update))(*(this->gen));
+    if (rng_update <= 1/this->update_val->at<float>(r,c)) {
+        int pos = (*(this->history_update))(*(this->gen));
+        LOG_IF(ERROR, pos >= this->history) << "RNG Error";
+        this->model->at<unsigned char>(r,c,pos) = val;
+        if (update_neighbor) {
+            int neighbor = (*(this->pick_neighbor))(*(this->gen));
+            switch(neighbor) {
+                case 0:
+                    if (r > 1 && c > 1) {
+                        updateModel(r-1, c-1, val, false);
+                    }
+                    break;
+                case 1:
+                    if (r > 1) {
+                        updateModel(r-1, c, val, false);
+                    }
+                    break;
+                case 2:
+                    if (r > 1 && c < this->cols - 1) {
+                        updateModel(r-1, c+1, val, false);
+                    }
+                    break;
+                case 3:
+                    if (c > 1) {
+                        updateModel(r, c-1, val, false);
+                    }
+                    break;
+                case 4:
+                    if (c < this->cols - 1) {
+                        updateModel(r, c+1, val, false);
+                    }
+                    break;
+                case 5:
+                    if (r < this->rows - 1 && c > 1) {
+                        updateModel(r+1, c-1, val, false);
+                    }
+                    break;
+                case 6:
+                    if (r < this->rows - 1) {
+                        updateModel(r+1, c, val, false);
+                    }
+                    break;
+                case 7:
+                    if (r < this->rows - 1 && c < this->cols - 1) {
+                        updateModel(r+1, c+1, val, false);
+                    }
+                    break;
+                default:
+                    LOG(ERROR) << "Unknown case selected for neightbor update.";
+                    break;
+            }
+        }
+    }
+}
+
 //Only supports 8-bit images
-void VANSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
+void HOFSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
     this->apply(image, fgmask, learning_rate);
 }
 
-VANSub::~VANSub() {
-    delete model;
-    delete background_image;
-    delete diff;
-}
-
-void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
+void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
     cv::Mat input_image = image.getMat();
     if (input_image.channels() == 3) {
         cv::cvtColor(input_image, input_image, CV_BGR2GRAY);
@@ -66,101 +123,59 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         this->initiated = true;
     }
 
-    this->diff->setTo(cv::Scalar(1));
+    this->mask->setTo(cv::Scalar(1));
 
     for (int r = 0; r < input_image.rows; r++) {
         for (int c = 0; c < input_image.cols; c++) {
             unsigned char input_val = input_image.at<unsigned char>(r,c) * this->color_reduction;
             int matches = 0;
+            float min_dist = THRESH_MAX;
             for (int z = 0; z < this->history; z++) {
-                int dist = abs(static_cast<int>(input_val) - model->at<unsigned char>(r,c,z));
-                if (dist <= this->radius) {
+                float dist = abs(static_cast<float>(input_val) - this->model->at<unsigned char>(r,c,z));
+                if (dist <= this->threshold->at<float>(r,c)) {
                     matches++;
-                    if (matches >= req_matches) {
-                        break;
-                    }
+                }
+                if (dist < min_dist) {
+                    min_dist = dist;
                 }
             }
-            if (matches >= req_matches) { // Background
+            this->decision_distance->at<float>(r,c) = learning_rate * min_dist + (1 - learning_rate) * this->decision_distance->at<float>(r,c);
+
+            // Update threshold
+            if (this->threshold->at<float>(r,c) > this->decision_distance->at<float>(r,c)  * THRESH_SCALE) {
+                this->threshold->at<float>(r,c) = this->threshold->at<float>(r,c) * (1 - THRESH_DEC_RATE);
+                if (this->threshold->at<float>(r,c) < THRESH_MIN) {
+                    this->threshold->at<float>(r,c) = THRESH_MIN;
+                }
+            } else {
+                this->threshold->at<float>(r,c) = this->threshold->at<float>(r,c) * (1 + THRESH_INC_RATE);
+                if (this->threshold->at<float>(r,c) > THRESH_MAX) {
+                    this->threshold->at<float>(r,c) = THRESH_MAX;
+                }
+            }
+
+            // Update model
+            if (matches >= REQ_MATCHES) { // Background
                 // Set foreground mask to zero.
-                diff->at<float>(r,c) = 0.0;
-
-                // Add pixel value to background model.
-                int pos = (*(this->history_update))(*(this->gen));
-                LOG_IF(ERROR, pos >= this->history) << "RNG Error";
-                model->at<unsigned char>(r,c,pos) = input_val;
-
-                // Randomly add value to neighbor pixel
-                // TODO Make this a function
-                int rng_update = (*(this->update_neighbor))(*(this->gen));
-                if (rng_update == 0) {
-                    int neighbor = (*(this->pick_neighbor))(*(this->gen));
-                    int pos = (*(this->history_update))(*(this->gen));
-                    LOG_IF(ERROR, pos >= this->history) << "RNG Error";
-                    switch(neighbor) {
-                        case 0:
-                            if (r > 1 && c > 1) {
-                                model->at<unsigned char>(r-1,c-1,pos) = input_val;
-                            }
-                            break;
-                        case 1:
-                            if (r > 1) {
-                                model->at<unsigned char>(r-1,c,pos) = input_val;
-                            }
-                            break;
-                        case 2:
-                            if (r > 1 && c < input_image.cols - 1) {
-                                model->at<unsigned char>(r-1,c+1,pos) = input_val;
-                            }
-                            break;
-                        case 3:
-                            if (c > 1) {
-                                model->at<unsigned char>(r,c-1,pos) = input_val;
-                            }
-                            break;
-                        case 4:
-                            if (c < input_image.cols - 1) {
-                                model->at<unsigned char>(r,c+1,pos) = input_val;
-                            }
-                            break;
-                        case 5:
-                            if (r < input_image.rows - 1 && c > 1) {
-                                model->at<unsigned char>(r+1,c-1,pos) = input_val;
-                            }
-                            break;
-                        case 6:
-                            if (r < input_image.rows - 1) {
-                                model->at<unsigned char>(r+1,c,pos) = input_val;
-                            }
-                            break;
-                        case 7:
-                            if (r < input_image.rows - 1 && c < input_image.cols - 1) {
-                                model->at<unsigned char>(r+1,c+1,pos) = input_val;
-                            }
-                            break;
-                    }
+                this->mask->at<float>(r,c) = 0.0;
+                this->update_val->at<float>(r,c) = this->update_val->at<float>(r,c) - UPDATE_DEC_RATE/this->decision_distance->at<float>(r,c);
+                if (this->update_val->at<float>(r,c) < UPDATE_MIN) {
+                    this->update_val->at<float>(r,c) = UPDATE_MIN;
                 }
+                updateModel(r, c, input_val);
             } else { // Foreground
-                /*
-                int rng_update = (*(this->absorb_foreground))(*(this->gen));
-                if (rng_update == 0) {
-                    int pos = (*(this->history_update))(*(this->gen));
-                    LOG_IF(ERROR, pos >= this->history) << "RNG Error";
-                    model->at<unsigned char>(r,c,pos) = input_val;
+                this->update_val->at<float>(r,c) = this->update_val->at<float>(r,c) + UPDATE_INC_RATE/this->decision_distance->at<float>(r,c);
+                if (this->update_val->at<float>(r,c) > UPDATE_MAX) {
+                    this->update_val->at<float>(r,c) = UPDATE_MAX;
                 }
-                */
             }
         }
     }
 
     if (fgmask.needed()) {
-        // Mask image
-        for (unsigned int i = 0; i < this->masks->size(); i++) {
-            cv::rectangle(*(this->diff), this->masks->at(i), cv::Scalar(0), CV_FILLED);
-        }
 
         cv::Mat char_mat;
-        diff->convertTo(char_mat, CV_8U, 255.0);
+        this->mask->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
 
         // Smooth mask (remove noise)
@@ -183,15 +198,15 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     }
 }
 
-void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
-    if (!background_image.needed() || model->empty()) {
+void HOFSub::getBackgroundImage(cv::OutputArray background_image) const {
+    if (!background_image.needed() || this->model->empty()) {
         VLOG(1) << "Background was empty";
         return;
     }
 
     for (int r = 0; r < this->rows; r++) {
         for (int c = 0; c < this->cols; c++) {
-            this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,2) * this->color_expansion;
+            this->background_image->at<unsigned char>(r,c) = this->model->at<unsigned char>(r,c,2) * this->color_expansion;
         }
     }
 
@@ -200,28 +215,26 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
     this->background_image->copyTo(output);
 }
 
-void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
+void HOFSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
     boost::random::uniform_int_distribution<int> random_row(0, image.rows-1);
     boost::random::uniform_int_distribution<int> random_col(0, image.cols-1);
     for (int r = 0; r < image.rows; r++) {
         for (int c = 0; c < image.cols; c++) {
             if (!random_init.contains(cv::Point(c,r))) {
-                for (int z = 0; z < this->req_matches; z++) {
-                    model->at<unsigned char>(r,c,z) = image.at<unsigned char>(r,c) * this->color_reduction;
+                for (int z = 0; z < this->REQ_MATCHES; z++) {
+                    this->model->at<unsigned char>(r,c,z) = image.at<unsigned char>(r,c) * this->color_reduction;
                 }
-                for (int z = this->req_matches; z < this->history; z++) {
-                    // TODO Add random pixel value here
+                for (int z = this->REQ_MATCHES; z < this->history; z++) {
                     int row = random_row(*(this->gen));
                     int col = random_col(*(this->gen));
-                    model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
+                    this->model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
                 }
             } else {
                 // And values randomly from outside the rect
                 for (int z = 0; z < this->history; z++) {
-                    // TODO Add random pixel value here
                     int row = random_row(*(this->gen));
                     int col = random_col(*(this->gen));
-                    model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
+                    this->model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
                 }
             }
         }

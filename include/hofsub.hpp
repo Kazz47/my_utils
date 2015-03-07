@@ -15,7 +15,7 @@ public:
     HOFSub(
         const int rows,
         const int cols,
-        const int radius = 20,
+        const int threshold = 20,
         const int colors = 256,
         const int history = 20);
     ~HOFSub();
@@ -24,22 +24,22 @@ public:
     void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
-    const static int req_matches = 2;
-    const static int max_colors = 256;
+    constexpr static int REQ_MATCHES = 2;
+    constexpr static int MAX_COLORS= 256;
     // Foreground detection threshold
-    const static int thresh_min = 18;
-    const static int thresh_max = std::numeric_limits<int>::max();
+    constexpr static float THRESH_SCALE = 5;
+    constexpr static float THRESH_MIN = 18;
+    constexpr static float THRESH_MAX = 1000000;
     // Recipricol used to as pixel update probability
-    const static int update_min = 2;
-    const static int update_max = 200;
-    const static double thresh_inc_rate = 0.05;
-    const static double thresh_dec_rate = 0.05;
-    const static double update_inc_rate = 1.00;
-    const static double update_dec_rate = 0.05;
+    constexpr static float UPDATE_MIN = 2;
+    constexpr static float UPDATE_MAX = 200;
+    constexpr static float THRESH_INC_RATE = 0.05;
+    constexpr static float THRESH_DEC_RATE = 0.05;
+    constexpr static float UPDATE_INC_RATE = 1.00;
+    constexpr static float UPDATE_DEC_RATE = 0.05;
 
     int rows;
     int cols;
-    int radius;
     int colors;
     int history;
 
@@ -47,15 +47,16 @@ private:
     float color_expansion;
     bool initiated;
 
-    std::vector<cv::Rect> *masks;
-
     cv::Mat *model;
-    cv::Mat *diff;
+    cv::Mat *decision_distance;
+    cv::Mat *threshold;
+    cv::Mat *update_val;
+    cv::Mat *mask;
     cv::Mat *background_image;
 
     std::mt19937 *gen;
+    boost::random::uniform_real_distribution<float> *update;
     boost::random::uniform_int_distribution<int> *history_update;
-    boost::random::uniform_int_distribution<int> *update_neighbor;
     boost::random::uniform_int_distribution<int> *pick_neighbor;
     /*
     std::uniform_int_distribution<int> *history_update;
@@ -64,6 +65,7 @@ private:
     */
 
     void initiateModel(cv::Mat &image, cv::Rect &random_init);
+    void updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor = true);
 };
 
 #endif //HOFSUB_H

@@ -12,6 +12,7 @@
 /** Default Values **/
 static const int MOG_ID = 1;
 static const int VIBE_ID = 2;
+static const int PBAS_ID = 3;
 static const int EVENT_ID = 32;
 
 /** Function Headers */
@@ -50,15 +51,15 @@ double calcVariance(std::vector<double> vals, const double mean) {
     return var;
 }
 
-void openTSVEventFile(std::string event_filename, int &video_id, std::vector<double> &vibe_vals, std::vector<double> &mog_vals) {
+void openTSVEventFile(std::string event_filename, int &video_id, std::vector<double> &vibe_vals, std::vector<double> &pbas_vals, std::vector<double> &mog_vals) {
     std::ifstream infile(event_filename);
 
-    std::string event_bool, vibe_val, mog_val;
+    std::string event_bool, vibe_val, pbas_val, mog_val;
 
     std::string line;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
-        if (!(iss >> video_id >> event_bool >> vibe_val >> mog_val)) {
+        if (!(iss >> video_id >> event_bool >> vibe_val >> pbas_val >> mog_val)) {
             break;
         }
         vibe_vals.push_back(atof(vibe_val.c_str()));
@@ -110,15 +111,17 @@ int main(int argc, char* argv[])
 
     std::vector<size_t> event_times;
     std::vector<double> vibe_vals;
+    std::vector<double> pbas_vals;
     std::vector<double> mog_vals;
 
     double fps = 10;
 
     int video_id;
-    openTSVEventFile(tsv_event_filename, video_id, vibe_vals, mog_vals);
+    openTSVEventFile(tsv_event_filename, video_id, vibe_vals, pbas_vals, mog_vals);
     std::string video_id_str = std::to_string(static_cast<long long>(video_id));
 
     std::vector<std::pair<size_t,size_t>> vibe_events = calculateEventTimes(vibe_vals, 3, fps);
+    std::vector<std::pair<size_t,size_t>> pbas_events = calculateEventTimes(pbas_vals, 3, fps);
     std::vector<std::pair<size_t,size_t>> mog_events = calculateEventTimes(mog_vals, 3, fps);
 
     // Open files
@@ -129,6 +132,11 @@ int main(int argc, char* argv[])
     for (size_t i = 0; i < vibe_events.size(); i++) {
         std::pair<size_t,size_t> pair = vibe_events[i];
         event_file << video_id << "," << EVENT_ID << "," << VIBE_ID << "," << pair.first << "," << pair.second << std::endl;
+    }
+
+    for (size_t i = 0; i < pbas_events.size(); i++) {
+        std::pair<size_t,size_t> pair = pbas_events[i];
+        event_file << video_id << "," << EVENT_ID << "," << PBAS_ID << "," << pair.first << "," << pair.second << std::endl;
     }
 
     for (size_t i = 0; i < mog_events.size(); i++) {

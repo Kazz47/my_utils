@@ -90,6 +90,7 @@ target_link_libraries(vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(bsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(kosub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(hofsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 
 # Link Executables
 target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})

@@ -19,7 +19,7 @@
 #include "hofsub.hpp"
 
 //Defines
-#define GUI
+//#define GUI
 
 /** Staic Vars **/
 static const double ALPHA = 0.1;

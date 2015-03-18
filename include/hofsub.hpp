@@ -24,19 +24,19 @@ public:
     void getBackgroundImage(cv::OutputArray background_image) const;
 
 private:
-    constexpr static int REQ_MATCHES = 2;
-    constexpr static int MAX_COLORS= 256;
+    static constexpr int REQ_MATCHES = 2;
+    static constexpr int MAX_COLORS= 256;
     // Foreground detection threshold
-    constexpr static float THRESH_SCALE = 5;
-    constexpr static float THRESH_MIN = 18;
-    constexpr static float THRESH_MAX = 1000000;
+    static constexpr float THRESH_SCALE = 5;
+    static constexpr float THRESH_MIN = 18;
+    static constexpr float THRESH_MAX = 1000000;
     // Recipricol used to as pixel update probability
-    constexpr static float UPDATE_MIN = 2;
-    constexpr static float UPDATE_MAX = 200;
-    constexpr static float THRESH_INC_RATE = 0.05;
-    constexpr static float THRESH_DEC_RATE = 0.05;
-    constexpr static float UPDATE_INC_RATE = 1.00;
-    constexpr static float UPDATE_DEC_RATE = 0.05;
+    static constexpr float UPDATE_MIN = 2;
+    static constexpr float UPDATE_MAX = 200;
+    static constexpr float THRESH_INC_RATE = 0.05;
+    static constexpr float THRESH_DEC_RATE = 0.05;
+    static constexpr float UPDATE_INC_RATE = 1.00;
+    static constexpr float UPDATE_DEC_RATE = 0.05;
 
     int rows;
     int cols;

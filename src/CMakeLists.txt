@@ -48,6 +48,7 @@ set(BSUB_TEST_SOURCES
 set(WILDLIFE_BGSUB_SOURCES
     wildlife_bgsub
     video_type
+    boinc_utils
 )
 
 set(EVENT_DATA_PARSER_SOURCES
@@ -58,7 +59,11 @@ set(EVENT_DB_UPLOADER_SOURCES
     event_db_uploader
 )
 
-include_directories(${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS})
+if(BOINC_FOUND)
+    include_directories(${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS} ${BOINC_INCLUDE_DIR})
+else(BOINC_FOUND)
+    include_directories(${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS})
+endif(BOINC_FOUND)
 
 add_library(vcrop_static STATIC ${VCROP_SOURCES})
 add_library(vcrop_shared SHARED ${VCROP_SOURCES})
@@ -96,7 +101,7 @@ target_link_libraries(hofsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(wildlife_video_splitter vcrop_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(background_subtract bsub_shared kosub_shared vansub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
-target_link_libraries(wildlife_bgsub vansub_shared hofsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES})
+target_link_libraries(wildlife_bgsub vansub_shared hofsub_shared ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} ${BOINC_APP_LIBRARIES})
 target_link_libraries(event_data_parser ${GLOG_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(event_db_uploader ${GLOG_LIBRARIES} ${MYSQL_LIBRARIES})
 target_link_libraries(blob_count ${GLOG_LIBRARIES} ${OpenCV_LIBS})

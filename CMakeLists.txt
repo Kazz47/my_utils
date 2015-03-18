@@ -47,6 +47,7 @@ find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
+find_package(BOINC)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

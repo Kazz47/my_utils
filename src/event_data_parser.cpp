@@ -63,6 +63,7 @@ void openTSVEventFile(std::string event_filename, int &video_id, std::vector<dou
             break;
         }
         vibe_vals.push_back(atof(vibe_val.c_str()));
+        pbas_vals.push_back(atof(pbas_val.c_str()));
         mog_vals.push_back(atof(mog_val.c_str()));
     }
     infile.close();

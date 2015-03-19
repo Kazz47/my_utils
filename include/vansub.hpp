@@ -22,6 +22,8 @@ public:
     void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate);
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
     void getBackgroundImage(cv::OutputArray background_image) const;
+    void read(const cv::FileNode &node);
+    void write(cv::FileStorage &fs) const;
 
 private:
     const static int req_matches = 2;
@@ -37,12 +39,11 @@ private:
     float color_expansion;
     bool initiated;
 
-    std::vector<cv::Rect> *masks;
-
     cv::Mat *model;
     cv::Mat *diff;
     cv::Mat *background_image;
 
+    double num_generated;
     std::mt19937 *gen;
     boost::random::uniform_real_distribution<float> *update;
     boost::random::uniform_int_distribution<int> *history_update;
@@ -53,6 +54,7 @@ private:
     std::uniform_int_distribution<int> *pick_neighbor;
     */
 
+    std::mt19937 getRNG();
     void initiateModel(cv::Mat &image, cv::Rect &random_init);
     void updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor = true);
 };

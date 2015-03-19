@@ -1,19 +1,19 @@
-cmake_minimum_required (VERSION 2.8.7)
-project (K_UTILS)
+cmake_minimum_required(VERSION 2.8.7)
+project(K_UTILS)
 
 # Setup C Flags
-SET (CMAKE_C_FLAGS                "-Wall")
-SET (CMAKE_C_FLAGS_DEBUG          "-g")
-SET (CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
-SET (CMAKE_C_FLAGS_RELEASE        "-O4 -DNDEBUG")
-SET (CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_C_FLAGS                "-Wall")
+set(CMAKE_C_FLAGS_DEBUG          "-g")
+set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
+set(CMAKE_C_FLAGS_RELEASE        "-O4 -DNDEBUG")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 # Setup C++ Flags
-SET (CMAKE_CXX_FLAGS                "-Wall -std=c++0x")
-SET (CMAKE_CXX_FLAGS_DEBUG          "-g")
-SET (CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
-SET (CMAKE_CXX_FLAGS_RELEASE        "-O4 -DNDEBUG")
-SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_CXX_FLAGS                "-Wall -std=c++0x")
+set(CMAKE_CXX_FLAGS_DEBUG          "-g")
+set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE        "-O4 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 # Look for module files in these locations
 set(CMAKE_MODULE_PATH
@@ -42,12 +42,17 @@ if(DOXYGEN_FOUND)
     )
 endif(DOXYGEN_FOUND)
 
+# Setting Vars
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED OFF)
+set(OpenCV_STATIC ON)
+
 # Find Packages
 find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
-find_package(BOINC)
+find_package(BOINC REQUIRED)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

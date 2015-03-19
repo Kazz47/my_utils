@@ -67,3 +67,11 @@ void BSub::updateModel(const cv::Mat &diff, const double &rate) {
     }
 }
 
+void BSub::read(const cv::FileNode &node) {
+    return;
+}
+
+void BSub::write(cv::FileStorage &fs) const {
+    return;
+}
+

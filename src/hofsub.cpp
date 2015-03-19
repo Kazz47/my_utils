@@ -33,7 +33,8 @@ HOFSub::HOFSub(
     this->mask= new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     std::random_device rd;
-    this->gen = new std::mt19937(rd());
+    this->num_generated = 0;
+    this->gen = new std::mt19937(0);
     this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
     this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
@@ -48,12 +49,15 @@ HOFSub::~HOFSub() {
 
 void HOFSub::updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor) {
     // Add pixel value to background model.
+    this->num_generated += 1;
     float rng_update = (*(this->update))(*(this->gen));
     if (rng_update <= 1/this->update_val->at<float>(r,c)) {
+        this->num_generated += 1;
         int pos = (*(this->history_update))(*(this->gen));
         LOG_IF(ERROR, pos >= this->history) << "RNG Error";
         this->model->at<unsigned char>(r,c,pos) = val;
         if (update_neighbor) {
+            this->num_generated += 1;
             int neighbor = (*(this->pick_neighbor))(*(this->gen));
             switch(neighbor) {
                 case 0:
@@ -225,6 +229,7 @@ void HOFSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
                     this->model->at<unsigned char>(r,c,z) = image.at<unsigned char>(r,c) * this->color_reduction;
                 }
                 for (int z = this->REQ_MATCHES; z < this->history; z++) {
+                    this->num_generated += 2;
                     int row = random_row(*(this->gen));
                     int col = random_col(*(this->gen));
                     this->model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
@@ -232,6 +237,7 @@ void HOFSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
             } else {
                 // And values randomly from outside the rect
                 for (int z = 0; z < this->history; z++) {
+                    this->num_generated += 2;
                     int row = random_row(*(this->gen));
                     int col = random_col(*(this->gen));
                     this->model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
@@ -239,5 +245,59 @@ void HOFSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
             }
         }
     }
+}
+
+void HOFSub::read(const cv::FileNode &node) {
+    //Delete Old Matrices
+    delete this->model;
+    delete this->decision_distance;
+    delete this->threshold;
+    delete this->update_val;
+    delete this->mask;
+    delete this->background_image;
+
+    //Load New Matrices
+    cv::Mat temp;
+    node["MODEL"] >> temp;
+    this->model = new cv::Mat(temp);
+    node["DECISION_DIST"] >> temp;
+    this->decision_distance = new cv::Mat(temp);
+    node["THRESHOLD"] >> temp;
+    this->threshold = new cv::Mat(temp);
+    node["UPDATE_VAL"] >> temp;
+    this->update_val = new cv::Mat(temp);
+    node["MASK"] >> temp;
+    this->mask= new cv::Mat(temp);
+    node["BACKGROUND"] >> temp;
+    this->background_image = new cv::Mat(temp);
+
+    //Update Values
+    node["ROWS"] >> this->rows;
+    node["COLS"] >> this->cols;
+    node["COLORS"] >> this->colors;
+    node["HISTORY"] >> this->history;
+    node["COLOR_REDUCTION"] >> this->color_reduction;
+    node["COLOR_EXPANSION"] >> this->color_expansion;
+    node["INITIATED"] >> this->initiated;
+    node["NUM_GENERATED"] >> this->num_generated;
+}
+
+void HOFSub::write(cv::FileStorage &fs) const {
+    fs << "{"
+        << "ROWS" << this->rows
+        << "COLS" << this->cols
+        << "COLORS" << this->colors
+        << "HISTORY" << this->history
+        << "COLOR_REDUCTION" << this->color_reduction
+        << "COLOR_EXPANSION" << this->color_expansion
+        << "INITIATED" << this->initiated
+        << "NUM_GENERATED" << this->num_generated
+        << "MODEL" << *(this->model)
+        << "DECISION_DIST" << *(this->decision_distance)
+        << "THRESHOLD" << *(this->threshold)
+        << "UPDATE_VAL" << *(this->update_val)
+        << "MASK" << *(this->mask)
+        << "BACKGROUND" << *(this->background_image)
+        << "}";
 }
 

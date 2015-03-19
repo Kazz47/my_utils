@@ -25,16 +25,14 @@ VANSub::VANSub(
     this->color_reduction = static_cast<float>(this->colors)/this->max_colors;
     this->color_expansion = static_cast<float>(this->max_colors)/this->colors;
 
-    this->masks = new std::vector<cv::Rect>();
-    this->masks->push_back(cv::Rect(530, 420, 150, 50));
-
     int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
     this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
     this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     std::random_device rd;
-    this->gen = new std::mt19937(rd());
+    this->num_generated = 0;
+    this->gen = new std::mt19937(0);
     this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
     //this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 100);
@@ -49,12 +47,15 @@ VANSub::~VANSub() {
 
 void VANSub::updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor) {
     // Add pixel value to background model.
+    this->num_generated += 1;
     float rng_update = (*(this->update))(*(this->gen));
     if (rng_update <= 1.0/16.0) {
+        this->num_generated += 1;
         int pos = (*(this->history_update))(*(this->gen));
         LOG_IF(ERROR, pos >= this->history) << "RNG Error";
         this->model->at<unsigned char>(r,c,pos) = val;
         if (update_neighbor) {
+            this->num_generated += 1;
             int neighbor = (*(this->pick_neighbor))(*(this->gen));
             switch(neighbor) {
                 case 0:
@@ -145,8 +146,10 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
                 updateModel(r, c, input_val);
             } else { // Foreground
                 /*
+                this->num_generated += 1;
                 int rng_update = (*(this->absorb_foreground))(*(this->gen));
                 if (rng_update == 0) {
+                    this->num_generated += 1;
                     int pos = (*(this->history_update))(*(this->gen));
                     LOG_IF(ERROR, pos >= this->history) << "RNG Error";
                     model->at<unsigned char>(r,c,pos) = input_val;
@@ -157,11 +160,6 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     }
 
     if (fgmask.needed()) {
-        // Mask image
-        for (unsigned int i = 0; i < this->masks->size(); i++) {
-            cv::rectangle(*(this->diff), this->masks->at(i), cv::Scalar(0), CV_FILLED);
-        }
-
         cv::Mat char_mat;
         diff->convertTo(char_mat, CV_8U, 255.0);
         fgmask.create(input_image.size(), input_image.type());
@@ -214,6 +212,7 @@ void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
                 }
                 for (int z = this->req_matches; z < this->history; z++) {
                     // TODO Add random pixel value here
+                    this->num_generated += 2;
                     int row = random_row(*(this->gen));
                     int col = random_col(*(this->gen));
                     model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
@@ -222,6 +221,7 @@ void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
                 // And values randomly from outside the rect
                 for (int z = 0; z < this->history; z++) {
                     // TODO Add random pixel value here
+                    this->num_generated += 2;
                     int row = random_row(*(this->gen));
                     int col = random_col(*(this->gen));
                     model->at<unsigned char>(r,c,z) = image.at<unsigned char>(row,col);
@@ -229,5 +229,49 @@ void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
             }
         }
     }
+}
+
+void VANSub::read(const cv::FileNode &node) {
+    //Delete Old Matrices
+    delete this->model;
+    delete this->diff;
+    delete this->background_image;
+
+    //Load New Matrices
+    cv::Mat temp;
+    node["MODEL"] >> temp;
+    this->model = new cv::Mat(temp);
+    node["DIFF"] >> temp;
+    this->diff = new cv::Mat(temp);
+    node["BACKGROUND"] >> temp;
+    this->background_image = new cv::Mat(temp);
+
+    //Update Values
+    node["ROWS"] >> this->rows;
+    node["COLS"] >> this->cols;
+    node["RADIUS"] >> this->radius;
+    node["COLORS"] >> this->colors;
+    node["HISTORY"] >> this->history;
+    node["COLOR_REDUCTION"] >> this->color_reduction;
+    node["COLOR_EXPANSION"] >> this->color_expansion;
+    node["INITIATED"] >> this->initiated;
+    node["NUM_GENERATED"] >> this->num_generated;
+}
+
+void VANSub::write(cv::FileStorage &fs) const {
+    fs << "{"
+        << "ROWS" << this->rows
+        << "COLS" << this->cols
+        << "RADIUS" << this->radius
+        << "COLORS" << this->colors
+        << "HISTORY" << this->history
+        << "COLOR_REDUCTION" << this->color_reduction
+        << "COLOR_EXPANSION" << this->color_expansion
+        << "INITIATED" << this->initiated
+        << "NUM_GENERATED" << this->num_generated
+        << "MODEL" << *(this->model)
+        << "DIFF" << *(this->diff)
+        << "BACKGROUND" << *(this->background_image)
+        << "}";
 }
 

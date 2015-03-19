@@ -22,6 +22,8 @@ public:
     void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate);
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
     void getBackgroundImage(cv::OutputArray background_image) const;
+    void read(const cv::FileNode &node);
+    void write(cv::FileStorage &fs) const;
 
 private:
     static constexpr int REQ_MATCHES = 2;
@@ -54,6 +56,7 @@ private:
     cv::Mat *mask;
     cv::Mat *background_image;
 
+    double num_generated;
     std::mt19937 *gen;
     boost::random::uniform_real_distribution<float> *update;
     boost::random::uniform_int_distribution<int> *history_update;

@@ -15,6 +15,14 @@ before_install:
 install:
 #Upgrade
 # - sudo apt-get --yes --force-yes upgrade
+#BOINC
+ - git clone git://boinc.berkeley.edu/boinc-v2.git boinc
+ - cd boinc
+ - ./_autosetup
+ - ./configure --disable-server
+ - make -j4
+ - sudo make -j4 install
+ - cd ..
 #Boost
  - sudo apt-get install libboost1.54-all-dev libboost-random1.54-dev
 #Google Log

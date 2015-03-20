@@ -3,6 +3,7 @@
 # Licence: GNU General Public Licence version 2 or later (see COPYING)
 #
 # Defines:
+# BOINC_FOUND
 # BOINC_LIBRARIES
 # BOINC_INCLUDE_DIRS
 # (plus some cache variables)
@@ -115,6 +116,8 @@ else ()
   endif ()
 endif ()
 
+add_definitions(-D_BOINC_APP_)
+set (BOINC_FOUND TRUE)
 set (BOINC_LIBRARIES ${BOINC_API_LIB} ${BOINC_LIB})
 
 mark_as_advanced (BOINC_API_LIB BOINC_LIB

@@ -16,11 +16,11 @@
 #include "str_util.h"
 #endif
 
-#include "diagnostics.h"
-#include "util.h"
-#include "filesys.h"
-#include "boinc_api.h"
-#include "mfile.h"
+#include "boinc/diagnostics.h"
+#include "boinc/util.h"
+#include "boinc/filesys.h"
+#include "boinc/boinc_api.h"
+#include "boinc/mfile.h"
 #endif
 
 struct WILDLIFE_SHMEM {

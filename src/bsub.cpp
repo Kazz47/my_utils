@@ -10,7 +10,6 @@ BSub::BSub(const unsigned int &history) {
 }
 
 BSub::~BSub() {
-    delete model;
     VLOG(1) << "Deleted!";
 }
 
@@ -68,10 +67,19 @@ void BSub::updateModel(const cv::Mat &diff, const double &rate) {
 }
 
 void BSub::read(const cv::FileNode &node) {
+    LOG(ERROR) << "BSub read not implemented";
+    cv::Mat temp;
+    node["MODEL"] >> temp;
+    this->model = new cv::Mat(temp);
     return;
 }
 
 void BSub::write(cv::FileStorage &fs) const {
+    LOG(ERROR) << "BSub write not implemented";
+    fs << "{";
+    fs << "MODEL" << *(this->model);
+    fs << "TEST" << 1;
+    fs << "}";
     return;
 }
 

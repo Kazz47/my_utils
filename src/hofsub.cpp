@@ -29,7 +29,6 @@ HOFSub::HOFSub(
     this->decision_distance = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
     this->threshold = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(threshold));
     this->update_val = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(UPDATE_MIN));
-    this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
     this->mask= new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     std::random_device rd;
@@ -40,11 +39,37 @@ HOFSub::HOFSub(
     this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
 }
 
+HOFSub::HOFSub(const HOFSub &other) {
+    this->initiated = other.initiated;
+
+    this->rows = other.rows;
+    this->cols = other.cols;
+    this->colors = other.colors;
+    this->history = other.history;
+
+    this->color_reduction = other.color_reduction;
+    this->color_expansion = other.color_expansion;
+
+    this->model = other.model;
+    this->decision_distance = other.decision_distance;
+    this->threshold = other.threshold;
+    this->update_val = other.update_val;
+    this->mask = other.mask;
+
+    this->seed = other.seed;
+    this->num_generated = other.num_generated;
+    this->gen = new std::mt19937(seed);
+    this->gen->discard(num_generated);
+
+    this->update = new boost::random::uniform_real_distribution<float>(0, 1);
+    this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
+    this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
+}
+
 HOFSub::~HOFSub() {
-    delete this->model;
-    delete this->threshold;
-    delete this->mask;
-    delete this->background_image;
+    delete this->update;
+    delete this->history_update;
+    delete this->pick_neighbor;
 }
 
 void HOFSub::updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor) {
@@ -179,7 +204,7 @@ void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     if (fgmask.needed()) {
 
         cv::Mat char_mat;
-        this->mask->convertTo(char_mat, CV_8U, 255.0);
+        this->mask->convertTo(char_mat, CV_8U, 255);
         fgmask.create(input_image.size(), input_image.type());
 
         // Smooth mask (remove noise)
@@ -208,15 +233,14 @@ void HOFSub::getBackgroundImage(cv::OutputArray background_image) const {
         return;
     }
 
-    for (int r = 0; r < this->rows; r++) {
-        for (int c = 0; c < this->cols; c++) {
-            this->background_image->at<unsigned char>(r,c) = this->model->at<unsigned char>(r,c,2) * this->color_expansion;
-        }
-    }
-
     background_image.create(this->rows, this->cols, CV_8U);
     cv::Mat output = background_image.getMat();
-    this->background_image->copyTo(output);
+
+    for (int r = 0; r < this->rows; r++) {
+        for (int c = 0; c < this->cols; c++) {
+            output.at<unsigned char>(r,c) = this->model->at<unsigned char>(r,c,2) * this->color_expansion;
+        }
+    }
 }
 
 void HOFSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
@@ -248,14 +272,6 @@ void HOFSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
 }
 
 void HOFSub::read(const cv::FileNode &node) {
-    //Delete Old Matrices
-    delete this->model;
-    delete this->decision_distance;
-    delete this->threshold;
-    delete this->update_val;
-    delete this->mask;
-    delete this->background_image;
-
     //Load New Matrices
     cv::Mat temp;
     node["MODEL"] >> temp;
@@ -268,8 +284,6 @@ void HOFSub::read(const cv::FileNode &node) {
     this->update_val = new cv::Mat(temp);
     node["MASK"] >> temp;
     this->mask= new cv::Mat(temp);
-    node["BACKGROUND"] >> temp;
-    this->background_image = new cv::Mat(temp);
 
     //Update Values
     node["ROWS"] >> this->rows;
@@ -283,21 +297,29 @@ void HOFSub::read(const cv::FileNode &node) {
 }
 
 void HOFSub::write(cv::FileStorage &fs) const {
-    fs << "{"
-        << "ROWS" << this->rows
-        << "COLS" << this->cols
-        << "COLORS" << this->colors
-        << "HISTORY" << this->history
-        << "COLOR_REDUCTION" << this->color_reduction
-        << "COLOR_EXPANSION" << this->color_expansion
-        << "INITIATED" << this->initiated
-        << "NUM_GENERATED" << this->num_generated
-        << "MODEL" << *(this->model)
-        << "DECISION_DIST" << *(this->decision_distance)
-        << "THRESHOLD" << *(this->threshold)
-        << "UPDATE_VAL" << *(this->update_val)
-        << "MASK" << *(this->mask)
-        << "BACKGROUND" << *(this->background_image)
-        << "}";
+    fs << "{";
+    fs << "ROWS" << this->rows;
+    fs << "COLS" << this->cols;
+    fs << "COLORS" << this->colors;
+    fs << "HISTORY" << this->history;
+    fs << "COLOR_REDUCTION" << this->color_reduction;
+    fs << "COLOR_EXPANSION" << this->color_expansion;
+    fs << "INITIATED" << this->initiated;
+    fs << "NUM_GENERATED" << this->num_generated;
+    fs << "MODEL" << *(this->model);
+    fs << "DECISION_DIST" << *(this->decision_distance);
+    fs << "THRESHOLD" << *(this->threshold);
+    fs << "UPDATE_VAL" << *(this->update_val);
+    fs << "MASK" << *(this->mask);
+    fs << "}";
+}
+
+std::ostream& HOFSub::print(std::ostream &out) const {
+    out << "{ ";
+    out << "rows = " << this->rows << ", ";
+    out << "cols = " << this->cols << ", ";
+    out << "model = " << this->model->size();
+    out << " }";
+    return out;
 }
 

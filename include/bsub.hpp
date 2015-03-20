@@ -17,7 +17,7 @@ public:
     void write(cv::FileStorage &fs) const;
 
 protected:
-    cv::Mat *model;
+    cv::Ptr<cv::Mat> model;
 
 private:
     void updateModel(const cv::Mat &dist, const double &rate);
@@ -33,6 +33,12 @@ static void read(const cv::FileNode &node, BSub &x, const BSub &default_value = 
     } else {
         x.read(node);
     }
+}
+
+static std::ostream& operator<<(std::ostream &out, const BSub &x) {
+    out << "{ ";
+    out << " }";
+    return out;
 }
 
 #endif //BSUB_H

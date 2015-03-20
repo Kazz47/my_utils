@@ -15,7 +15,6 @@ VANSub::VANSub(
     LOG_IF(ERROR, history <= 0) << "History was set to zero.";
 
     this->initiated = false;
-
     this->rows = rows;
     this->cols = cols;
     this->radius = radius;
@@ -27,12 +26,37 @@ VANSub::VANSub(
 
     int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
-    this->background_image = new cv::Mat(this->rows, this->cols, CV_8U, cv::Scalar(0));
     this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
-    std::random_device rd;
+    this->seed = 0;
     this->num_generated = 0;
-    this->gen = new std::mt19937(0);
+    this->gen = new std::mt19937(this->seed);
+    this->update = new boost::random::uniform_real_distribution<float>(0, 1);
+    this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
+    //this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 100);
+    this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
+}
+
+VANSub::VANSub(const VANSub &other) {
+    this->initiated = other.initiated;
+
+    this->rows = other.rows;
+    this->cols = other.cols;
+    this->radius = other.radius;
+    this->colors = other.colors;
+    this->history = other.history;
+
+    this->color_reduction = other.color_reduction;
+    this->color_expansion = other.color_expansion;
+
+    this->model = other.model;
+    this->diff = other.diff;
+
+    this->seed = other.seed;
+    this->num_generated = other.num_generated;
+    this->gen = new std::mt19937(this->seed);
+    this->gen->discard(num_generated);
+
     this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
     //this->update_neighbor= new boost::random::uniform_int_distribution<int>(0, 100);
@@ -40,9 +64,11 @@ VANSub::VANSub(
 }
 
 VANSub::~VANSub() {
-    delete model;
-    delete background_image;
-    delete diff;
+    delete this->gen;
+    delete this->update;
+    delete this->history_update;
+    //delete this->update_neighbor;
+    delete this->pick_neighbor;
 }
 
 void VANSub::updateModel(const int &r, const int &c, const unsigned char &val, const bool &update_neighbor) {
@@ -161,7 +187,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
 
     if (fgmask.needed()) {
         cv::Mat char_mat;
-        diff->convertTo(char_mat, CV_8U, 255.0);
+        diff->convertTo(char_mat, CV_8U, 255);
         fgmask.create(input_image.size(), input_image.type());
 
         // Smooth mask (remove noise)
@@ -190,15 +216,14 @@ void VANSub::getBackgroundImage(cv::OutputArray background_image) const {
         return;
     }
 
-    for (int r = 0; r < this->rows; r++) {
-        for (int c = 0; c < this->cols; c++) {
-            this->background_image->at<unsigned char>(r,c) = model->at<unsigned char>(r,c,2) * this->color_expansion;
-        }
-    }
-
     background_image.create(this->rows, this->cols, CV_8U);
     cv::Mat output = background_image.getMat();
-    this->background_image->copyTo(output);
+
+    for (int r = 0; r < this->rows; r++) {
+        for (int c = 0; c < this->cols; c++) {
+            output.at<unsigned char>(r,c) = this->model->at<unsigned char>(r,c,2) * this->color_expansion;
+        }
+    }
 }
 
 void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
@@ -232,19 +257,12 @@ void VANSub::initiateModel(cv::Mat &image, cv::Rect &random_init) {
 }
 
 void VANSub::read(const cv::FileNode &node) {
-    //Delete Old Matrices
-    delete this->model;
-    delete this->diff;
-    delete this->background_image;
-
     //Load New Matrices
     cv::Mat temp;
     node["MODEL"] >> temp;
     this->model = new cv::Mat(temp);
     node["DIFF"] >> temp;
     this->diff = new cv::Mat(temp);
-    node["BACKGROUND"] >> temp;
-    this->background_image = new cv::Mat(temp);
 
     //Update Values
     node["ROWS"] >> this->rows;
@@ -255,23 +273,33 @@ void VANSub::read(const cv::FileNode &node) {
     node["COLOR_REDUCTION"] >> this->color_reduction;
     node["COLOR_EXPANSION"] >> this->color_expansion;
     node["INITIATED"] >> this->initiated;
+    node["SEED"] >> this->seed;
     node["NUM_GENERATED"] >> this->num_generated;
 }
 
 void VANSub::write(cv::FileStorage &fs) const {
-    fs << "{"
-        << "ROWS" << this->rows
-        << "COLS" << this->cols
-        << "RADIUS" << this->radius
-        << "COLORS" << this->colors
-        << "HISTORY" << this->history
-        << "COLOR_REDUCTION" << this->color_reduction
-        << "COLOR_EXPANSION" << this->color_expansion
-        << "INITIATED" << this->initiated
-        << "NUM_GENERATED" << this->num_generated
-        << "MODEL" << *(this->model)
-        << "DIFF" << *(this->diff)
-        << "BACKGROUND" << *(this->background_image)
-        << "}";
+    fs << "{";
+    fs << "ROWS" << this->rows;
+    fs << "COLS" << this->cols;
+    fs << "RADIUS" << this->radius;
+    fs << "COLORS" << this->colors;
+    fs << "HISTORY" << this->history;
+    fs << "COLOR_REDUCTION" << this->color_reduction;
+    fs << "COLOR_EXPANSION" << this->color_expansion;
+    fs << "INITIATED" << this->initiated;
+    fs << "SEED" << this->seed;
+    fs << "NUM_GENERATED" << this->num_generated;
+    fs << "MODEL" << *(this->model);
+    fs << "DIFF" << *(this->diff);
+    fs << "}";
+}
+
+std::ostream& VANSub::print(std::ostream &out) const {
+    out << "{ ";
+    out << "rows = " << this->rows << ", ";
+    out << "cols = " << this->cols << ", ";
+    out << "model = " << this->model->size();
+    out << " }";
+    return out;
 }
 

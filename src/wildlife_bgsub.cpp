@@ -29,11 +29,11 @@
 #include "str_util.h"
 #endif
 
-#include "diagnostics.h"
-#include "util.h"
-#include "filesys.h"
-#include "boinc_api.h"
-#include "mfile.h"
+#include "boinc/diagnostics.h"
+#include "boinc/util.h"
+#include "boinc/filesys.h"
+#include "boinc/boinc_api.h"
+#include "boinc/mfile.h"
 #endif
 
 /** Staic Vars **/
@@ -181,18 +181,22 @@ int main(int argc, char* argv[])
 
     int frame_pos = 0;
     //Look for a local checkpoint and load it
+#ifdef _BOINC_APP_
     if(readCheckpoint(video_id, frame_pos, subtractors)) {
-        LOG(ERROR) << "Continuing from checkpoint...";
+        LOG(INFO) << "Continuing from checkpoint...";
         skipFrames(capture, frame_pos);
     } else {
-        LOG(ERROR) << "Unsuccessful checkpoint read, starting from beginning of video";
+        LOG(INFO) << "Unsuccessful checkpoint read, starting from beginning of video";
+#endif
         cv::Ptr<BSub> pVIBE = new VANSub(rows, cols, 10, 256, 20); //ViBe Background subtractor
         cv::Ptr<BSub> pPBAS = new HOFSub(rows, cols, 10, 256, 20); //PBAS Background subtractor
         //cv::Ptr<cv::BackgroundSubtractor> pMOG = new cv::BackgroundSubtractorMOG(); //MOG Background subtractor
         subtractors.push_back(pVIBE);
         subtractors.push_back(pPBAS);
         //subtractors.push_back(pMOG);
+#ifdef _BOINC_APP_
     }
+#endif
 
     processVideo(video_id, capture);
     capture.release();
@@ -268,6 +272,9 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
 			boinc_checkpoint_completed();
 		}
 #endif
+        if((int)frame_pos%10 == 0) {
+            writeCheckpoint(video_id, frame_pos, subtractors);
+        }
 
         // Mask
         cv::rectangle(frame, type.getTimestampRect(), cv::Scalar(0,0,0), CV_FILLED);
@@ -364,35 +371,37 @@ void writeFramenumber(cv::Mat &frame, double frame_num) {
 }
 
 void writeCheckpoint(const int video_id, const int &frame_pos, const std::vector<cv::Ptr<BSub>> &subtractors) throw(std::runtime_error) {
-    std::string checkpoint_filename = getBoincFilename(std::to_string(static_cast<long long>(video_id)) + ".checkpoint");
+    std::string checkpoint_filename = getBoincFilename(std::to_string(static_cast<long long>(video_id)) + ".yml");
     //writeEventsToFile(checkpoint_filename, event_types);
-    cv::FileStorage outfile(checkpoint_filename, cv::FileStorage::APPEND);
+    cv::FileStorage outfile(checkpoint_filename, cv::FileStorage::WRITE);
     if (!outfile.isOpened()) {
         throw std::runtime_error("Checkpoint file did not open");
     }
     outfile << "CURRENT_FRAME" << frame_pos;
-    std::vector<BSub> temp_subtractors;
-    for (int i = 0; i < subtractors.size(); i++) {
-        temp_subtractors.push_back(*(subtractors.at(i)));
-    }
-    outfile << "SUBTRACTORS" << temp_subtractors;
+    outfile << "VANSUB" << *subtractors.at(0);
+    outfile << "HOFSUB" << *subtractors.at(1);
     outfile.release();
 }
 
 bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub>> &subtractors) {
     LOG(INFO) << "Reading checkpoint...";
-    std::string checkpoint_filename = getBoincFilename(std::to_string(static_cast<long long>(video_id)) + ".checkpoint");
+    std::string checkpoint_filename = getBoincFilename(std::to_string(static_cast<long long>(video_id)) + ".yml");
     cv::FileStorage infile(checkpoint_filename, cv::FileStorage::READ);
     if (!infile.isOpened()) {
         return false;
     }
     infile["CURRENT_FRAME"] >> frame_pos;
     LOG(INFO) << "CURRENT_FRAME: " << frame_pos;
-    std::vector<BSub> temp_subtractors;
-    infile["SUTRACTORS"] >> temp_subtractors;
-    for (int i = 0; i < temp_subtractors.size(); i++) {
-        subtractors.push_back(&(temp_subtractors.at(i)));
-    }
+
+    VANSub van_sub;
+    infile["VANSUB"] >> van_sub;
+    LOG(INFO) << van_sub;
+    subtractors.push_back(new VANSub(van_sub));
+
+    HOFSub hof_sub;
+    infile["HOFSUB"] >> hof_sub;
+    LOG(INFO) << hof_sub;
+    subtractors.push_back(new HOFSub(hof_sub));
 
     infile.release();
 

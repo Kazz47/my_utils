@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
     cv::namedWindow("PBAS Model", CV_GUI_NORMAL);
     cv::namedWindow("FG Mask VIBE", CV_GUI_NORMAL);
     cv::namedWindow("FG Mask PBAS", CV_GUI_NORMAL);
-    cv::namedWindow("FG Mask MOG", CV_GUI_NORMAL);
+    //cv::namedWindow("FG Mask MOG", CV_GUI_NORMAL);
 #endif
 
     std::string video_filename(argv[1]);
@@ -291,8 +291,8 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
         imshow("VIBE Model", vibe_model);
         imshow("PBAS Model", pbas_model);
         imshow("FG Mask VIBE", *(masks.at(0)));
-        imshow("FG Mask PBAS", *(masks.at(0)));
-        imshow("FG Mask MOG", *(masks.at(0)));
+        imshow("FG Mask PBAS", *(masks.at(1)));
+        //imshow("FG Mask MOG", *(masks.at(2)));
         //get the input from the keyboard
         cv::waitKey(5);
 #endif
@@ -306,9 +306,12 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
                     if(masks.at(i)->at<unsigned char>(r, c) > 0) {
                         pixel_counts.at(i)++;
                     }
-                    delete masks.at(i);
                 }
             }
+        }
+
+        for (int i = 0; i < masks.size(); i++) {
+            delete masks.at(i);
         }
         masks.clear();
 

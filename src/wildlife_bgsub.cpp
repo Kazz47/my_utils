@@ -43,12 +43,21 @@ static const double ALPHA = 0.1;
 /** Global Vars*/
 std::vector<cv::Ptr<BSub>> subtractors;
 
+std::vector<double> vibe_means;
+std::vector<double> pbas_means;
+//std::vector<double> mog_means;
+
+double vibe_exp_mean = 0;
+double pbas_exp_mean = 0;
+//double mog_exp_mean = 0;
+
+
 #ifndef _BOINC_APP_
 std::ofstream tsv_file;
 std::ofstream event_file;
 std::ofstream vibe_file;
 std::ofstream pbas_file;
-std::ofstream mog_file;
+//std::ofstream mog_file;
 #endif
 
 /** Function Headers */
@@ -207,7 +216,7 @@ int main(int argc, char* argv[])
     event_file.close();
     vibe_file.close();
     pbas_file.close();
-    mog_file.close();
+    //mog_file.close();
 #endif
 
 #ifdef GUI
@@ -239,13 +248,6 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     //std::vector<size_t> *event_times = openEventFile(video_id, 10);
     //std::vector<double> vibe_window_vals;
     //std::vector<double> mog_window_vals;
-    double vibe_exp_mean = 0;
-    double pbas_exp_mean = 0;
-    double mog_exp_mean = 0;
-
-    std::vector<double> vibe_means;
-    std::vector<double> pbas_means;
-    std::vector<double> mog_means;
 
 #ifndef _BOINC_APP_
     //Open files for data output
@@ -255,7 +257,7 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     event_file.open(video_id_str + "/binary_event.dat");
     vibe_file.open(video_id_str + "/white_vibe_pixels.dat");
     pbas_file.open(video_id_str + "/white_pbas_pixels.dat");
-    mog_file.open(video_id_str + "/white_mog_pixels.dat");
+    //mog_file.open(video_id_str + "/white_mog_pixels.dat");
 #endif
 
     //read input data.
@@ -272,7 +274,7 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
 			boinc_checkpoint_completed();
 		}
 #endif
-        if((int)frame_pos%10 == 0) {
+        if((int)frame_pos%100 == 0) {
             writeCheckpoint(video_id, frame_pos, subtractors);
         }
 
@@ -325,29 +327,31 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
         // Compile results
         double next_vibe_val = pixel_counts.at(0)/num_pixels;
         double next_pbas_val = pixel_counts.at(1)/num_pixels;
-        double next_mog_val = pixel_counts.at(2)/num_pixels;
+        //double next_mog_val = pixel_counts.at(2)/num_pixels;
 
         vibe_exp_mean = ALPHA * next_vibe_val + (1-ALPHA) * vibe_exp_mean;
         pbas_exp_mean = ALPHA * next_pbas_val + (1-ALPHA) * pbas_exp_mean;
-        mog_exp_mean = ALPHA * next_mog_val + (1-ALPHA) * mog_exp_mean;
+        //mog_exp_mean = ALPHA * next_mog_val + (1-ALPHA) * mog_exp_mean;
 
         vibe_means.push_back(vibe_exp_mean);
         pbas_means.push_back(pbas_exp_mean);
-        mog_means.push_back(mog_exp_mean);
+        //mog_means.push_back(mog_exp_mean);
 
 #ifndef _BOINC_APP_
         //Print Stuff
         vibe_file << vibe_exp_mean << std::endl;
         pbas_file << pbas_exp_mean << std::endl;
-        mog_file << mog_exp_mean << std::endl;
-        tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << "\t" << mog_exp_mean << std::endl;
+        //mog_file << mog_exp_mean << std::endl;
+        //tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << "\t" << mog_exp_mean << std::endl;
+        tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << std::endl;
 #endif
     }
 
 #ifdef _BOINC_APP_
     std::cerr << "<results>";
     for (unsigned int i = 0; i < vibe_means.size(); i++) {
-        std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << "\t" << mog_means.at(i) << std::endl;
+        //std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << "\t" << mog_means.at(i) << std::endl;
+        std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << std::endl;
     }
     std::cerr << "</results>";
 #endif
@@ -358,7 +362,7 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     event_file.close();
     vibe_file.close();
     pbas_file.close();
-    mog_file.close();
+    //mog_file.close();
 #endif
 }
 
@@ -378,6 +382,10 @@ void writeCheckpoint(const int video_id, const int &frame_pos, const std::vector
         throw std::runtime_error("Checkpoint file did not open");
     }
     outfile << "CURRENT_FRAME" << frame_pos;
+    outfile << "VIBE_MEANS" << vibe_means;
+    outfile << "PBAS_MEANS" << pbas_means;
+    outfile << "VIBE_EXP_MEAN" << vibe_exp_mean;
+    outfile << "PBAS_EXP_MEAN" << pbas_exp_mean;
     outfile << "VANSUB" << *subtractors.at(0);
     outfile << "HOFSUB" << *subtractors.at(1);
     outfile.release();
@@ -392,6 +400,13 @@ bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub
     }
     infile["CURRENT_FRAME"] >> frame_pos;
     LOG(INFO) << "CURRENT_FRAME: " << frame_pos;
+
+    infile["VIBE_MEANS"] >> vibe_means;
+    infile["PBAS_MEANS"] >> pbas_means;
+    infile["VIBE_EXP_MEAN"] >> vibe_exp_mean;
+    LOG(INFO) << "VIBE_EXP_MEAN: " << vibe_exp_mean;
+    infile["PBAS_EXP_MEAN"] >> pbas_exp_mean;
+    LOG(INFO) << "PBAS_EXP_MEAN: " << pbas_exp_mean;
 
     VANSub van_sub;
     infile["VANSUB"] >> van_sub;

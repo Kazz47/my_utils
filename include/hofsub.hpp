@@ -54,7 +54,6 @@ private:
     cv::Ptr<cv::Mat> decision_distance;
     cv::Ptr<cv::Mat> threshold;
     cv::Ptr<cv::Mat> update_val;
-    cv::Ptr<cv::Mat> mask;
     cv::Ptr<cv::Mat> background_image;
 
     double seed;

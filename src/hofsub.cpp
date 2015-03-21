@@ -29,7 +29,6 @@ HOFSub::HOFSub(
     this->decision_distance = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
     this->threshold = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(threshold));
     this->update_val = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(UPDATE_MIN));
-    this->mask= new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     std::random_device rd;
     this->num_generated = 0;
@@ -54,7 +53,6 @@ HOFSub::HOFSub(const HOFSub &other) {
     this->decision_distance = other.decision_distance;
     this->threshold = other.threshold;
     this->update_val = other.update_val;
-    this->mask = other.mask;
 
     this->seed = other.seed;
     this->num_generated = other.num_generated;
@@ -152,7 +150,7 @@ void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         this->initiated = true;
     }
 
-    this->mask->setTo(cv::Scalar(1));
+    cv::Mat mask(this->rows, this->cols, CV_8U, cv::Scalar(255));
 
     for (int r = 0; r < input_image.rows; r++) {
         for (int c = 0; c < input_image.cols; c++) {
@@ -186,7 +184,7 @@ void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
             // Update model
             if (matches >= REQ_MATCHES) { // Background
                 // Set foreground mask to zero.
-                this->mask->at<float>(r,c) = 0.0;
+                mask.at<unsigned char>(r,c) = 0;
                 this->update_val->at<float>(r,c) = this->update_val->at<float>(r,c) - UPDATE_DEC_RATE/this->decision_distance->at<float>(r,c);
                 if (this->update_val->at<float>(r,c) < UPDATE_MIN) {
                     this->update_val->at<float>(r,c) = UPDATE_MIN;
@@ -202,28 +200,27 @@ void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     }
 
     if (fgmask.needed()) {
-
-        cv::Mat char_mat;
-        this->mask->convertTo(char_mat, CV_8U, 255);
         fgmask.create(input_image.size(), input_image.type());
 
         // Smooth mask (remove noise)
         //cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4,4), cv::Point(0,0));
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(0,0));
-        cv::morphologyEx(char_mat, char_mat, cv::MORPH_OPEN, kernel);
-        cv::morphologyEx(char_mat, char_mat, cv::MORPH_CLOSE, kernel);
+        cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+        cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 
-        char_mat.copyTo(fgmask);
+        mask.copyTo(fgmask);
 
         // Find Convex Hull
+        /*
         std::vector<std::vector<cv::Point>> contours;
         std::vector<cv::Vec4i> hierarchy;
-        cv::findContours(char_mat, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+        cv::findContours(mask, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
         std::vector<std::vector<cv::Point>> hull(contours.size());
         for (unsigned int i = 0; i < contours.size(); i++) {
             cv::convexHull(cv::Mat(contours[i]), hull[i], false);
             cv::drawContours(fgmask, hull, i, cv::Scalar(100), CV_FILLED);
         }
+        */
     }
 }
 
@@ -282,8 +279,6 @@ void HOFSub::read(const cv::FileNode &node) {
     this->threshold = new cv::Mat(temp);
     node["UPDATE_VAL"] >> temp;
     this->update_val = new cv::Mat(temp);
-    node["MASK"] >> temp;
-    this->mask= new cv::Mat(temp);
 
     //Update Values
     node["ROWS"] >> this->rows;
@@ -310,7 +305,6 @@ void HOFSub::write(cv::FileStorage &fs) const {
     fs << "DECISION_DIST" << *(this->decision_distance);
     fs << "THRESHOLD" << *(this->threshold);
     fs << "UPDATE_VAL" << *(this->update_val);
-    fs << "MASK" << *(this->mask);
     fs << "}";
 }
 

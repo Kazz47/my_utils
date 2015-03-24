@@ -51,8 +51,12 @@ set(OpenCV_STATIC ON)
 find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
-find_package(OpenCV REQUIRED COMPONENTS imgproc core videostab)
+find_package(OpenCV REQUIRED COMPONENTS videostab)
 find_package(BOINC REQUIRED)
+
+message(STATUS "OpenCV_LIBS: ${OpenCV_LIBS}")
+message(STATUS "GLOG_LIBRARIES: ${GLOG_LIBRARIES}")
+message(STATUS "BOINC_LIBRARIES: ${BOINC_LIBRARIES}")
 
 if(BOINC_FOUND)
     message(STATUS "Found BOINC:  ${BOINC_INCLUDE_DIR}")

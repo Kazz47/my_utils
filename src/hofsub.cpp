@@ -30,9 +30,9 @@ HOFSub::HOFSub(
     this->threshold = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(threshold));
     this->update_val = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(UPDATE_MIN));
 
-    std::random_device rd;
-    this->num_generated = 0;
-    this->gen = new std::mt19937(0);
+    this->seed = 0;
+    this->num_generated = 1;
+    this->gen = new std::mt19937(this->seed);
     this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
     this->pick_neighbor = new boost::random::uniform_int_distribution<int>(0, 7);
@@ -211,7 +211,6 @@ void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         mask.copyTo(fgmask);
 
         // Find Convex Hull
-        /*
         std::vector<std::vector<cv::Point>> contours;
         std::vector<cv::Vec4i> hierarchy;
         cv::findContours(mask, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
@@ -220,7 +219,6 @@ void HOFSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
             cv::convexHull(cv::Mat(contours[i]), hull[i], false);
             cv::drawContours(fgmask, hull, i, cv::Scalar(100), CV_FILLED);
         }
-        */
     }
 }
 
@@ -273,12 +271,15 @@ void HOFSub::read(const cv::FileNode &node) {
     cv::Mat temp;
     node["MODEL"] >> temp;
     this->model = new cv::Mat(temp);
-    node["DECISION_DIST"] >> temp;
-    this->decision_distance = new cv::Mat(temp);
-    node["THRESHOLD"] >> temp;
-    this->threshold = new cv::Mat(temp);
-    node["UPDATE_VAL"] >> temp;
-    this->update_val = new cv::Mat(temp);
+    cv::Mat temp0;
+    node["DECISION_DIST"] >> temp0;
+    this->decision_distance = new cv::Mat(temp0);
+    cv::Mat temp1;
+    node["THRESHOLD"] >> temp1;
+    this->threshold = new cv::Mat(temp1);
+    cv::Mat temp2;
+    node["UPDATE_VAL"] >> temp2;
+    this->update_val = new cv::Mat(temp2);
 
     //Update Values
     node["ROWS"] >> this->rows;

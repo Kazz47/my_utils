@@ -26,10 +26,9 @@ VANSub::VANSub(
 
     int sizes[] = {this->rows, this->cols, this->history};
     this->model = new cv::Mat(3, sizes, CV_8U, cv::Scalar(0));
-    this->diff = new cv::Mat(this->rows, this->cols, CV_32F, cv::Scalar(0));
 
     this->seed = 0;
-    this->num_generated = 0;
+    this->num_generated = 1;
     this->gen = new std::mt19937(this->seed);
     this->update = new boost::random::uniform_real_distribution<float>(0, 1);
     this->history_update = new boost::random::uniform_int_distribution<int>(0, history-1);
@@ -50,7 +49,6 @@ VANSub::VANSub(const VANSub &other) {
     this->color_expansion = other.color_expansion;
 
     this->model = other.model;
-    this->diff = other.diff;
 
     this->seed = other.seed;
     this->num_generated = other.num_generated;
@@ -151,7 +149,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
         this->initiated = true;
     }
 
-    this->diff->setTo(cv::Scalar(1));
+    cv::Mat mask(this->rows, this->cols, CV_8U, cv::Scalar(255));
 
     for (int r = 0; r < input_image.rows; r++) {
         for (int c = 0; c < input_image.cols; c++) {
@@ -168,7 +166,7 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
             }
             if (matches >= req_matches) { // Background
                 // Set foreground mask to zero.
-                diff->at<float>(r,c) = 0.0;
+                mask.at<unsigned char>(r,c) = 0;
                 updateModel(r, c, input_val);
             } else { // Foreground
                 /*
@@ -186,22 +184,18 @@ void VANSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning
     }
 
     if (fgmask.needed()) {
-        cv::Mat char_mat;
-        diff->convertTo(char_mat, CV_8U, 255);
-        fgmask.create(input_image.size(), input_image.type());
-
         // Smooth mask (remove noise)
         //cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4,4), cv::Point(0,0));
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5,5), cv::Point(0,0));
-        cv::morphologyEx(char_mat, char_mat, cv::MORPH_OPEN, kernel);
-        cv::morphologyEx(char_mat, char_mat, cv::MORPH_CLOSE, kernel);
+        cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+        cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
 
-        char_mat.copyTo(fgmask);
+        mask.copyTo(fgmask);
 
         // Find Convex Hull
         std::vector<std::vector<cv::Point>> contours;
         std::vector<cv::Vec4i> hierarchy;
-        cv::findContours(char_mat, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+        cv::findContours(mask, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
         std::vector<std::vector<cv::Point>> hull(contours.size());
         for (unsigned int i = 0; i < contours.size(); i++) {
             cv::convexHull(cv::Mat(contours[i]), hull[i], false);
@@ -261,8 +255,6 @@ void VANSub::read(const cv::FileNode &node) {
     cv::Mat temp;
     node["MODEL"] >> temp;
     this->model = new cv::Mat(temp);
-    node["DIFF"] >> temp;
-    this->diff = new cv::Mat(temp);
 
     //Update Values
     node["ROWS"] >> this->rows;
@@ -290,7 +282,6 @@ void VANSub::write(cv::FileStorage &fs) const {
     fs << "SEED" << this->seed;
     fs << "NUM_GENERATED" << this->num_generated;
     fs << "MODEL" << *(this->model);
-    fs << "DIFF" << *(this->diff);
     fs << "}";
 }
 

@@ -5,9 +5,6 @@
 #include <cstdlib>
 #include <fstream>
 
-//Boost
-#include <boost/filesystem.hpp>
-
 //OpenCV
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -20,7 +17,7 @@
 #include "boinc_utils.hpp"
 
 //Defines
-#define GUI
+//#define GUI
 
 //BOINC
 #ifdef _BOINC_APP_
@@ -73,11 +70,12 @@ int skipFrames(cv::VideoCapture &capture, int n);
 // TODO Update the help info
 void help() {
     LOG(INFO) << "--------------------------------------------------------------------------";
-    LOG(INFO) << "This program shows how to use background subtraction methods provided by ";
-    LOG(INFO) << " OpenCV. You can process both videos (-vid) and images (-img).";
+    LOG(INFO) << "This is the Wildlife@Home Background Subtraction progoram.";
+    LOG(INFO) << "It runs multiple types of background subtraction to be used in the";
+    LOG(INFO) << "detection of birds in their native habitats.";
     LOG(INFO) << "Usage:";
-    LOG(INFO) << "./wildlife_bgsub <video filename> <event filename>";
-    LOG(INFO) << "for example: ./wildlife_bgsub video.avi events.dat";
+    LOG(INFO) << "./wildlife_bgsub <video filename>";
+    LOG(INFO) << "for example: ./wildlife_bgsub video.ogv";
     LOG(INFO) << "--------------------------------------------------------------------------";
 }
 
@@ -264,20 +262,6 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     while(capture.read(frame)) {
         double frame_pos = capture.get(CV_CAP_PROP_POS_FRAMES);
 
-		// Update percent completion and look for checkpointing request.
-#ifdef _BOINC_APP_
-		boinc_fraction_done((double)frame_pos/total_frames);
-
-		if(boinc_time_to_checkpoint()) {
-			LOG(INFO) << "Checkpointing";
-			writeCheckpoint(video_id, frame_pos, subtractors);
-			boinc_checkpoint_completed();
-		}
-#endif
-        if((int)frame_pos%100 == 0) {
-            writeCheckpoint(video_id, frame_pos, subtractors);
-        }
-
         // Mask
         cv::rectangle(frame, type.getTimestampRect(), cv::Scalar(0,0,0), CV_FILLED);
         cv::rectangle(frame, type.getWatermarkRect(), cv::Scalar(0,0,0), CV_FILLED);
@@ -345,6 +329,17 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
         //tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << "\t" << mog_exp_mean << std::endl;
         tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << std::endl;
 #endif
+
+#ifdef _BOINC_APP_
+		// Update percent completion and look for checkpointing request.
+		boinc_fraction_done((double)frame_pos/total_frames);
+		if(boinc_time_to_checkpoint()) {
+			LOG(INFO) << "Checkpointing...";
+			writeCheckpoint(video_id, frame_pos, subtractors);
+			boinc_checkpoint_completed();
+			LOG(INFO) << "Done checkpointing!";
+		}
+#endif
     }
 
 #ifdef _BOINC_APP_
@@ -381,6 +376,7 @@ void writeCheckpoint(const int video_id, const int &frame_pos, const std::vector
     if (!outfile.isOpened()) {
         throw std::runtime_error("Checkpoint file did not open");
     }
+    LOG(INFO) << "WRITE_CURRENT_FRAME: " << frame_pos;
     outfile << "CURRENT_FRAME" << frame_pos;
     outfile << "VIBE_MEANS" << vibe_means;
     outfile << "PBAS_MEANS" << pbas_means;
@@ -399,7 +395,7 @@ bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub
         return false;
     }
     infile["CURRENT_FRAME"] >> frame_pos;
-    LOG(INFO) << "CURRENT_FRAME: " << frame_pos;
+    LOG(INFO) << "READ_CURRENT_FRAME: " << frame_pos;
 
     infile["VIBE_MEANS"] >> vibe_means;
     infile["PBAS_MEANS"] >> pbas_means;

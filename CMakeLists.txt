@@ -2,18 +2,22 @@ cmake_minimum_required(VERSION 2.8.7)
 project(K_UTILS)
 
 # Setup C Flags
-set(CMAKE_C_FLAGS                "-Wall")
-set(CMAKE_C_FLAGS_DEBUG          "-g")
-set(CMAKE_C_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
-set(CMAKE_C_FLAGS_RELEASE        "-O4 -DNDEBUG")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_C_FLAGS                   "-Wall")
+set(CMAKE_C_FLAGS_DEBUG             "-g")
+set(CMAKE_C_FLAGS_MINSIZEREL        "-Os -DNDEBUG")
+set(CMAKE_C_FLAGS_RELEASE           "-O4 -DNDEBUG")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
 
 # Setup C++ Flags
-set(CMAKE_CXX_FLAGS                "-Wall -std=c++0x")
-set(CMAKE_CXX_FLAGS_DEBUG          "-g")
-set(CMAKE_CXX_FLAGS_MINSIZEREL     "-Os -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELEASE        "-O4 -DNDEBUG")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+set(CMAKE_CXX_FLAGS                 "-Wall -std=c++0x")
+set(CMAKE_CXX_FLAGS_DEBUG           "-g")
+set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE         "-O4 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-O2 -g")
+
+# Set EXE Linker Flags
+set(CMAKE_EXE_LINKER_FLAGS          "-L$ENV{LINKER_LIBRARY_PATH}")
+message(STATUS "LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
 
 # Look for module files in these locations
 set(CMAKE_MODULE_PATH

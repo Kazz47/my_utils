@@ -343,12 +343,12 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     }
 
 #ifdef _BOINC_APP_
-    std::cerr << "<results>";
+    std::cerr << "<results>" << std::endl;
     for (unsigned int i = 0; i < vibe_means.size(); i++) {
         //std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << "\t" << mog_means.at(i) << std::endl;
         std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << std::endl;
     }
-    std::cerr << "</results>";
+    std::cerr << "</results>" << std::endl;
 #endif
 
 #ifndef _BOINC_APP_

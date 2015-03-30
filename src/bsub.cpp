@@ -5,7 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 BSub::BSub(const unsigned int &history) {
-    model = new cv::Mat();
+    this->model = new cv::Mat();
     VLOG(3) << "Created!";
 }
 
@@ -28,13 +28,13 @@ void BSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_r
         cv::cvtColor(input_image, input_image, CV_BGR2GRAY);
     }
 
-    if (model->empty()) {
+    if (this->model->empty()) {
         LOG(INFO) << "Background Model is empty, setting it to a copy of the foreground.";
-        input_image.copyTo(*model);
+        input_image.copyTo(*(this->model));
     }
 
     cv::Mat diff;
-    cv::absdiff(input_image, *model, diff);
+    cv::absdiff(input_image, *(this->model), diff);
 
     if (fgmask.needed()) {
         fgmask.create(input_image.size(), input_image.type());
@@ -47,26 +47,26 @@ void BSub::apply(cv::InputArray image, cv::OutputArray fgmask, double learning_r
 }
 
 void BSub::getBackgroundImage(cv::OutputArray background_image) const {
-    if (!background_image.needed() || model->empty()) {
-        VLOG(1) << "Background was empty";
+    if (!background_image.needed() || this->model->empty()) {
+        LOG(WARNING) << "Background was empty";
         return;
     }
 
-    background_image.create(model->size(), model->type());
+    background_image.create(this->model->size(), this->model->type());
     cv::Mat output = background_image.getMat();
     model->copyTo(output);
-    VLOG(1) << "Got background image";
+    VLOG(2) << "Got background image";
 }
 
 void BSub::updateModel(const cv::Mat &diff, const double &rate) {
     LOG_IF(ERROR, rate < 0 || rate > 1) << "Invalid rate.";
-    LOG_IF(ERROR, model->empty() == true) << "Apptempting to update an empty model.";
-    cv::Mat prev_model(*model);
-    for (int r = 0; r < model->rows; r++) {
-        for (int c = 0; c < model->cols; c++) {
+    LOG_IF(ERROR, this->model->empty() == true) << "Apptempting to update an empty model.";
+    cv::Mat prev_model(*(this->model));
+    for (int r = 0; r < this->model->rows; r++) {
+        for (int c = 0; c < this->model->cols; c++) {
             unsigned char prev_val = prev_model.at<unsigned char>(r, c);
             unsigned char distance = diff.at<unsigned char>(r, c);
-            model->at<unsigned char>(r, c) = ((1-rate) * prev_val) + (rate * distance);
+            this->model->at<unsigned char>(r, c) = ((1-rate) * prev_val) + (rate * distance);
         }
     }
 }

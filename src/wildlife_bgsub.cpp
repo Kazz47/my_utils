@@ -58,8 +58,8 @@ void processVideo(const int video_id, cv::VideoCapture &capture);
 void writeFramenumber(cv::Mat &frame, double frame_num);
 int getVideoId(std::string path);
 bool readConfig(std::string filename, std::string *species);
-void writeCheckpoint(const int video_id, const int &frame_pos, const std::vector<cv::Ptr<BSub>> &subtractors) throw(std::runtime_error);
-bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub>> &subtractors);
+void writeCheckpoint(const int &frame_pos, const std::vector<cv::Ptr<BSub>> &subtractors) throw(std::runtime_error);
+bool readCheckpoint(int &frame_pos, std::vector<cv::Ptr<BSub>> &subtractors);
 int skipFrames(cv::VideoCapture &capture, int n);
 
 // TODO Update the help info
@@ -185,15 +185,15 @@ int main(int argc, char* argv[])
     int frame_pos = 0;
     //Look for a local checkpoint and load it
 #ifdef _BOINC_APP_
-    if(readCheckpoint(video_id, frame_pos, subtractors)) {
+    if(readCheckpoint(frame_pos, subtractors)) {
         LOG(INFO) << "Continuing from checkpoint...";
         skipFrames(capture, frame_pos);
     } else {
         LOG(INFO) << "Unsuccessful checkpoint read, starting from beginning of video";
 #endif
         cv::Ptr<BSub> pBSUB = new BSub(); //AccAvg Background subtractor
-        cv::Ptr<BSub> pVIBE = new VANSub(rows, cols, 10, 256, 20); //ViBe Background subtractor
-        cv::Ptr<BSub> pPBAS = new HOFSub(rows, cols, 10, 256, 20); //PBAS Background subtractor
+        cv::Ptr<VANSub> pVIBE = new VANSub(rows, cols, 10, 256, 20); //ViBe Background subtractor
+        cv::Ptr<HOFSub> pPBAS = new HOFSub(rows, cols, 10, 256, 20); //PBAS Background subtractor
 
         subtractors.push_back(pBSUB);
         subtractors.push_back(pVIBE);
@@ -256,18 +256,21 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
         }
 
 #ifdef GUI
-        cv::Mat vibe_model, pbas_model;
-        subtractors.at(0)->getBackgroundImage(vibe_model);
-        subtractors.at(1)->getBackgroundImage(pbas_model);
+        cv::Mat bsub_model, vibe_model, pbas_model;
+        subtractors.at(0)->getBackgroundImage(bsub_model);
+        subtractors.at(1)->getBackgroundImage(vibe_model);
+        subtractors.at(2)->getBackgroundImage(pbas_model);
 
         //show the current frame and the fg masks
         writeFramenumber(frame, frame_pos);
 
         imshow("Frame", frame);
+        imshow("BSUB Model", vibe_model);
         imshow("VIBE Model", vibe_model);
         imshow("PBAS Model", pbas_model);
-        imshow("FG Mask VIBE", *(masks.at(0)));
-        imshow("FG Mask PBAS", *(masks.at(1)));
+        imshow("FG Mask BSUB", *(masks.at(0)));
+        imshow("FG Mask VIBE", *(masks.at(1)));
+        imshow("FG Mask PBAS", *(masks.at(2)));
         //imshow("FG Mask MOG", *(masks.at(2)));
         //get the input from the keyboard
         cv::waitKey(5);
@@ -314,7 +317,7 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
 		boinc_fraction_done((double)frame_pos/total_frames);
 		if(boinc_time_to_checkpoint()) {
 			LOG(INFO) << "Checkpointing...";
-			writeCheckpoint(video_id, frame_pos, subtractors);
+			writeCheckpoint(frame_pos, subtractors);
 			boinc_checkpoint_completed();
 			LOG(INFO) << "Done checkpointing!";
 		}
@@ -345,28 +348,35 @@ void writeFramenumber(cv::Mat &frame, double frame_num) {
     cv::putText(frame, frameNumberString.c_str(), cv::Point(15, 15), cv::FONT_HERSHEY_SIMPLEX, 0.5 , cv::Scalar(0,0,0));
 }
 
-void writeCheckpoint(const int video_id, const int &frame_pos, const std::vector<cv::Ptr<BSub>> &subtractors) throw(std::runtime_error) {
-    std::string checkpoint_filename = getBoincFilename(std::to_string(static_cast<long long>(video_id)) + ".yml");
+void writeCheckpoint(const int &frame_pos, const std::vector<cv::Ptr<BSub>> &subtractors) throw(std::runtime_error) {
+    std::string checkpoint_filename = getBoincFilename("checkpoint.yml");
     //writeEventsToFile(checkpoint_filename, event_types);
     cv::FileStorage outfile(checkpoint_filename, cv::FileStorage::WRITE);
     if (!outfile.isOpened()) {
         throw std::runtime_error("Checkpoint file did not open");
     }
     LOG(INFO) << "WRITE_CURRENT_FRAME: " << frame_pos;
+    //outfile << std::scientific << std::setprecision(20);
     outfile << "CURRENT_FRAME" << frame_pos;
+
     outfile << "BSUB_MEANS" << bsub_means;
     outfile << "VIBE_MEANS" << vibe_means;
     outfile << "PBAS_MEANS" << pbas_means;
+
+    outfile << "BSUB_EXP_MEAN" << bsub_exp_mean;
     outfile << "VIBE_EXP_MEAN" << vibe_exp_mean;
     outfile << "PBAS_EXP_MEAN" << pbas_exp_mean;
-    outfile << "VANSUB" << *subtractors.at(0);
-    outfile << "HOFSUB" << *subtractors.at(1);
+
+    outfile << "BSUB" << *subtractors.at(0);
+    outfile << "VANSUB" << *subtractors.at(1);
+    outfile << "HOFSUB" << *subtractors.at(2);
+
     outfile.release();
 }
 
-bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub>> &subtractors) {
+bool readCheckpoint(int &frame_pos, std::vector<cv::Ptr<BSub>> &subtractors) {
     LOG(INFO) << "Reading checkpoint...";
-    std::string checkpoint_filename = getBoincFilename(std::to_string(static_cast<long long>(video_id)) + ".yml");
+    std::string checkpoint_filename = getBoincFilename("checkpoint.yml");
     cv::FileStorage infile(checkpoint_filename, cv::FileStorage::READ);
     if (!infile.isOpened()) {
         return false;
@@ -377,6 +387,9 @@ bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub
     infile["BSUB_MEANS"] >> bsub_means;
     infile["VIBE_MEANS"] >> vibe_means;
     infile["PBAS_MEANS"] >> pbas_means;
+
+    infile["BSUB_EXP_MEAN"] >> bsub_exp_mean;
+    LOG(INFO) << "BSUB_EXP_MEAN: " << bsub_exp_mean;
     infile["VIBE_EXP_MEAN"] >> vibe_exp_mean;
     LOG(INFO) << "VIBE_EXP_MEAN: " << vibe_exp_mean;
     infile["PBAS_EXP_MEAN"] >> pbas_exp_mean;

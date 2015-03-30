@@ -6,11 +6,16 @@
 
 BSub::BSub(const unsigned int &history) {
     model = new cv::Mat();
-    VLOG(1) << "Created!";
+    VLOG(3) << "Created!";
+}
+
+BSub::BSub(const BSub &other) {
+    this->model = other.model;
+    VLOG(3) << "Created!";
 }
 
 BSub::~BSub() {
-    VLOG(1) << "Deleted!";
+    VLOG(3) << "Deleted!";
 }
 
 void BSub::operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate) {
@@ -67,19 +72,22 @@ void BSub::updateModel(const cv::Mat &diff, const double &rate) {
 }
 
 void BSub::read(const cv::FileNode &node) {
-    LOG(ERROR) << "BSub read not implemented";
+    //Load New Matrices
     cv::Mat temp;
     node["MODEL"] >> temp;
     this->model = new cv::Mat(temp);
-    return;
 }
 
 void BSub::write(cv::FileStorage &fs) const {
-    LOG(ERROR) << "BSub write not implemented";
     fs << "{";
     fs << "MODEL" << *(this->model);
-    fs << "TEST" << 1;
     fs << "}";
-    return;
+}
+
+std::ostream& BSub::print(std::ostream &out) const {
+    out << "{ ";
+    out << "model = " << this->model->size();
+    out << " }";
+    return out;
 }
 

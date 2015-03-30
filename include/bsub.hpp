@@ -9,10 +9,12 @@
 class BSub : public cv::BackgroundSubtractor {
 public:
     BSub(const unsigned int &history = 10);
+    BSub(const BSub &other);
     ~BSub();
     void operator()(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
     void apply(cv::InputArray image, cv::OutputArray fgmask, double learning_rate = 0);
     void getBackgroundImage(cv::OutputArray background_image) const;
+    std::ostream& print(std::ostream &out) const;
     void read(const cv::FileNode &node);
     void write(cv::FileStorage &fs) const;
 
@@ -36,8 +38,7 @@ static void read(const cv::FileNode &node, BSub &x, const BSub &default_value = 
 }
 
 static std::ostream& operator<<(std::ostream &out, const BSub &x) {
-    out << "{ ";
-    out << " }";
+    x.print(out);
     return out;
 }
 

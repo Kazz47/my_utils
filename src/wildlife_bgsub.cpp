@@ -2,16 +2,15 @@
 #include <glog/logging.h>
 
 //C++
-#include <cstdlib>
 #include <fstream>
+#include <iomanip>
 
 //OpenCV
-#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/features2d/features2d.hpp>
 
 //My Libs
 #include "video_type.hpp"
+#include "bsub.hpp"
 #include "vansub.hpp"
 #include "hofsub.hpp"
 #include "boinc_utils.hpp"
@@ -40,21 +39,17 @@ static const double ALPHA = 0.1;
 /** Global Vars*/
 std::vector<cv::Ptr<BSub>> subtractors;
 
+std::vector<double> bsub_means;
 std::vector<double> vibe_means;
 std::vector<double> pbas_means;
-//std::vector<double> mog_means;
 
+double bsub_exp_mean = 0;
 double vibe_exp_mean = 0;
 double pbas_exp_mean = 0;
-//double mog_exp_mean = 0;
 
 
 #ifndef _BOINC_APP_
 std::ofstream tsv_file;
-std::ofstream event_file;
-std::ofstream vibe_file;
-std::ofstream pbas_file;
-//std::ofstream mog_file;
 #endif
 
 /** Function Headers */
@@ -162,11 +157,12 @@ int main(int argc, char* argv[])
 #ifdef GUI
     //create GUI windows
     cv::namedWindow("Frame", CV_GUI_NORMAL);
+    cv::namedWindow("BSUB Model", CV_GUI_NORMAL);
     cv::namedWindow("VIBE Model", CV_GUI_NORMAL);
     cv::namedWindow("PBAS Model", CV_GUI_NORMAL);
+    cv::namedWindow("FG Mask BSUB", CV_GUI_NORMAL);
     cv::namedWindow("FG Mask VIBE", CV_GUI_NORMAL);
     cv::namedWindow("FG Mask PBAS", CV_GUI_NORMAL);
-    //cv::namedWindow("FG Mask MOG", CV_GUI_NORMAL);
 #endif
 
     std::string video_filename(argv[1]);
@@ -195,27 +191,19 @@ int main(int argc, char* argv[])
     } else {
         LOG(INFO) << "Unsuccessful checkpoint read, starting from beginning of video";
 #endif
+        cv::Ptr<BSub> pBSUB = new BSub(); //AccAvg Background subtractor
         cv::Ptr<BSub> pVIBE = new VANSub(rows, cols, 10, 256, 20); //ViBe Background subtractor
         cv::Ptr<BSub> pPBAS = new HOFSub(rows, cols, 10, 256, 20); //PBAS Background subtractor
-        //cv::Ptr<cv::BackgroundSubtractor> pMOG = new cv::BackgroundSubtractorMOG(); //MOG Background subtractor
+
+        subtractors.push_back(pBSUB);
         subtractors.push_back(pVIBE);
         subtractors.push_back(pPBAS);
-        //subtractors.push_back(pMOG);
 #ifdef _BOINC_APP_
     }
 #endif
 
     processVideo(video_id, capture);
     capture.release();
-
-#ifndef _BOINC_APP_
-    //Close files
-    tsv_file.close();
-    event_file.close();
-    vibe_file.close();
-    pbas_file.close();
-    //mog_file.close();
-#endif
 
 #ifdef GUI
     //destroy GUI windows
@@ -245,17 +233,12 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     std::string video_id_str = std::to_string(static_cast<long long>(video_id));
     //std::vector<size_t> *event_times = openEventFile(video_id, 10);
     //std::vector<double> vibe_window_vals;
-    //std::vector<double> mog_window_vals;
 
 #ifndef _BOINC_APP_
     //Open files for data output
     boost::filesystem::path dir(video_id_str);
     boost::filesystem::create_directory(dir);
     tsv_file.open(video_id_str + "/data.tsv");
-    event_file.open(video_id_str + "/binary_event.dat");
-    vibe_file.open(video_id_str + "/white_vibe_pixels.dat");
-    pbas_file.open(video_id_str + "/white_pbas_pixels.dat");
-    //mog_file.open(video_id_str + "/white_mog_pixels.dat");
 #endif
 
     //read input data.
@@ -309,25 +292,21 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
         masks.clear();
 
         // Compile results
-        double next_vibe_val = pixel_counts.at(0)/num_pixels;
-        double next_pbas_val = pixel_counts.at(1)/num_pixels;
-        //double next_mog_val = pixel_counts.at(2)/num_pixels;
+        double next_bsub_val = pixel_counts.at(0)/num_pixels;
+        double next_vibe_val = pixel_counts.at(1)/num_pixels;
+        double next_pbas_val = pixel_counts.at(2)/num_pixels;
 
+        bsub_exp_mean = ALPHA * next_bsub_val + (1-ALPHA) * bsub_exp_mean;
         vibe_exp_mean = ALPHA * next_vibe_val + (1-ALPHA) * vibe_exp_mean;
         pbas_exp_mean = ALPHA * next_pbas_val + (1-ALPHA) * pbas_exp_mean;
-        //mog_exp_mean = ALPHA * next_mog_val + (1-ALPHA) * mog_exp_mean;
 
+        bsub_means.push_back(bsub_exp_mean);
         vibe_means.push_back(vibe_exp_mean);
         pbas_means.push_back(pbas_exp_mean);
-        //mog_means.push_back(mog_exp_mean);
 
 #ifndef _BOINC_APP_
         //Print Stuff
-        vibe_file << vibe_exp_mean << std::endl;
-        pbas_file << pbas_exp_mean << std::endl;
-        //mog_file << mog_exp_mean << std::endl;
-        //tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << "\t" << mog_exp_mean << std::endl;
-        tsv_file << video_id << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << std::endl;
+        tsv_file << video_id << "\t" << bsub_exp_mean << "\t" << vibe_exp_mean << "\t" << pbas_exp_mean << std::endl;
 #endif
 
 #ifdef _BOINC_APP_
@@ -343,21 +322,18 @@ void processVideo(const int video_id, cv::VideoCapture &capture) {
     }
 
 #ifdef _BOINC_APP_
-    std::cerr << "<results>" << std::endl;
+    std::string checkpoint_filename = getBoincFilename("results.tsv");
+    std::ofstream results_file(checkpoint_filename);
+    results_file << std::scientific << std::setprecision(20);
     for (unsigned int i = 0; i < vibe_means.size(); i++) {
-        //std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << "\t" << mog_means.at(i) << std::endl;
-        std::cerr << video_id << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << std::endl;
+        results_file << bsub_means.at(i) << "\t" << vibe_means.at(i) << "\t" << pbas_means.at(i) << std::endl;
     }
-    std::cerr << "</results>" << std::endl;
+    results_file.close();
 #endif
 
 #ifndef _BOINC_APP_
     //Close files for data output
     tsv_file.close();
-    event_file.close();
-    vibe_file.close();
-    pbas_file.close();
-    //mog_file.close();
 #endif
 }
 
@@ -378,6 +354,7 @@ void writeCheckpoint(const int video_id, const int &frame_pos, const std::vector
     }
     LOG(INFO) << "WRITE_CURRENT_FRAME: " << frame_pos;
     outfile << "CURRENT_FRAME" << frame_pos;
+    outfile << "BSUB_MEANS" << bsub_means;
     outfile << "VIBE_MEANS" << vibe_means;
     outfile << "PBAS_MEANS" << pbas_means;
     outfile << "VIBE_EXP_MEAN" << vibe_exp_mean;
@@ -397,12 +374,18 @@ bool readCheckpoint(const int video_id, int &frame_pos, std::vector<cv::Ptr<BSub
     infile["CURRENT_FRAME"] >> frame_pos;
     LOG(INFO) << "READ_CURRENT_FRAME: " << frame_pos;
 
+    infile["BSUB_MEANS"] >> bsub_means;
     infile["VIBE_MEANS"] >> vibe_means;
     infile["PBAS_MEANS"] >> pbas_means;
     infile["VIBE_EXP_MEAN"] >> vibe_exp_mean;
     LOG(INFO) << "VIBE_EXP_MEAN: " << vibe_exp_mean;
     infile["PBAS_EXP_MEAN"] >> pbas_exp_mean;
     LOG(INFO) << "PBAS_EXP_MEAN: " << pbas_exp_mean;
+
+    BSub b_sub;
+    infile["BSUB"] >> b_sub;
+    LOG(INFO) << b_sub;
+    subtractors.push_back(new BSub(b_sub));
 
     VANSub van_sub;
     infile["VANSUB"] >> van_sub;

@@ -54,16 +54,17 @@ double calcVariance(std::vector<double> vals, const double mean) {
 void openTSVEventFile(std::string event_filename, int &video_id, std::vector<double> &vibe_vals, std::vector<double> &pbas_vals, std::vector<double> &mog_vals) {
     std::ifstream infile(event_filename);
 
-    std::string vibe_val, pbas_val;
+    std::string vibe_val, pbas_val, mog_val;
 
     std::string line;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
-        if (!(iss >> video_id >> vibe_val >> pbas_val)) {
+        if (!(iss >> video_id >> vibe_val >> pbas_val >> mog_val)) {
             break;
         }
         vibe_vals.push_back(atof(vibe_val.c_str()));
         pbas_vals.push_back(atof(pbas_val.c_str()));
+        mog_vals.push_back(atof(mog_val.c_str()));
     }
     infile.close();
 }

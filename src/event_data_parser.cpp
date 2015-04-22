@@ -79,11 +79,12 @@ std::vector<std::pair<size_t,size_t>> calculateEventTimes(std::vector<double> &v
     size_t start_time = 0;
     LOG(INFO) << "Mean: " << mean;
     LOG(INFO) << "Stdev * Dist: " << dist * stdev;
+    double bound = mean + (dist * stdev);
     for (size_t time = 0; time < vals.size(); time++) {
-        if (vals[time] >= mean + (dist * stdev)) {
+        if (vals[time] >= bound) {
             event_happening = true;
             start_time = time;
-        } else if (event_happening && vals[time] < mean + (dist * stdev)) {
+        } else if (event_happening && vals[time] < bound) {
             event_happening = false;
             output.push_back(std::pair<size_t,size_t>(start_time/fps, time/fps));
         }

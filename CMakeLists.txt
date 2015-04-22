@@ -2,14 +2,14 @@ cmake_minimum_required(VERSION 2.8.7)
 project(K_UTILS)
 
 # Setup C Flags
-set(CMAKE_C_FLAGS                   "-Wall")
+set(CMAKE_C_FLAGS                   "-Wall -Wextra -pedantic")
 set(CMAKE_C_FLAGS_DEBUG             "-g")
 set(CMAKE_C_FLAGS_MINSIZEREL        "-Os -DNDEBUG")
 set(CMAKE_C_FLAGS_RELEASE           "-O4 -DNDEBUG")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO    "-O2 -g")
 
 # Setup C++ Flags
-set(CMAKE_CXX_FLAGS                 "-Wall -std=c++0x")
+set(CMAKE_CXX_FLAGS                 "-Wall -Wextra -std=c++0x -pedantic")
 set(CMAKE_CXX_FLAGS_DEBUG           "-g")
 set(CMAKE_CXX_FLAGS_MINSIZEREL      "-Os -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE         "-O4 -DNDEBUG")
@@ -34,6 +34,12 @@ if(APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mmacosx-version-min=10.9")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.9")
 endif(APPLE)
+
+if(MSVC)
+    include_directories("$ENV{HOME}/installs/include")
+    set(BOOST_ROOT "$ENV{HOME}/boost/boost_1_58_0")
+    set(OpenCV_DIR "$ENV{HOME}/installs")
+endif(MSVC)
 
 # Setup Doxygen
 find_package(Doxygen)

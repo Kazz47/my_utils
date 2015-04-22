@@ -36,9 +36,9 @@ if(APPLE)
 endif(APPLE)
 
 if(MSVC)
-    include_directories("$ENV{HOME}/installs/include")
-    set(BOOST_ROOT "$ENV{HOME}/boost/boost_1_58_0")
-    set(OpenCV_DIR "$ENV{HOME}/installs")
+    set(OM_USE_LIBCMT 1) #Look for Windows lib names
+    set(BOOST_ROOT "$ENV{HOMEPATH}/boost/boost_1_58_0")
+    set(OpenCV_DIR "$ENV{HOMEPATH}/installs")
 endif(MSVC)
 
 # Setup Doxygen
@@ -62,13 +62,21 @@ set(OpenCV_STATIC ON)
 # Find Packages
 find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system filesystem)
+if(MSVC)
+    find_package(Boost REQUIRED)
+else(MSVC)
+    find_package(Boost REQUIRED COMPONENTS system filesystem)
+endif(MSVC)
 find_package(OpenCV REQUIRED COMPONENTS videostab)
 find_package(BOINC REQUIRED)
 
-message(STATUS "OpenCV_LIBS: ${OpenCV_LIBS}")
-message(STATUS "GLOG_LIBRARIES: ${GLOG_LIBRARIES}")
-message(STATUS "BOINC_LIBRARIES: ${BOINC_LIBRARIES}")
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif(Boost_FOUND)
+
+if(OpenCV_FOUND)
+    include_directories(${OpenCV_INCLUDE_DIRS})
+endif(OpenCV_FOUND
 
 if(BOINC_FOUND)
     message(STATUS "Found BOINC:  ${BOINC_INCLUDE_DIR}")
@@ -87,7 +95,7 @@ set(INCLUDE_DIRS
 add_subdirectory(src)
 
 # Testing
-find_package(GTest REQUIRED)
+find_package(GTest)
 if(GTEST_FOUND)
     ENABLE_TESTING()
     add_subdirectory(test)

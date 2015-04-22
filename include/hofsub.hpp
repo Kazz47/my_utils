@@ -28,19 +28,19 @@ public:
     void write(cv::FileStorage &fs) const;
 
 private:
-    static constexpr int REQ_MATCHES = 2;
-    static constexpr int MAX_COLORS= 256;
+    static const int REQ_MATCHES = 2;
+    static const int MAX_COLORS= 256;
     // Foreground detection threshold
-    static constexpr float THRESH_SCALE = 5;
-    static constexpr float THRESH_MIN = 18;
-    static constexpr float THRESH_MAX = 1000000;
+    static const float THRESH_SCALE;
+    static const float THRESH_MIN;
+    static const float THRESH_MAX;
     // Recipricol used to as pixel update probability
-    static constexpr float UPDATE_MIN = 2;
-    static constexpr float UPDATE_MAX = 200;
-    static constexpr float THRESH_INC_RATE = 0.05;
-    static constexpr float THRESH_DEC_RATE = 0.05;
-    static constexpr float UPDATE_INC_RATE = 1.00;
-    static constexpr float UPDATE_DEC_RATE = 0.05;
+    static const float UPDATE_MIN;
+    static const float UPDATE_MAX;
+    static const float THRESH_INC_RATE;
+    static const float THRESH_DEC_RATE;
+    static const float UPDATE_INC_RATE;
+    static const float UPDATE_DEC_RATE;
 
     int rows;
     int cols;

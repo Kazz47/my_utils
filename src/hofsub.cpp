@@ -5,6 +5,18 @@
 #include <cmath>
 #include <opencv2/imgproc/imgproc.hpp>
 
+// Foreground detection threshold
+const float HOFSub::THRESH_SCALE = 5;
+const float HOFSub::THRESH_MIN = 18;
+const float HOFSub::THRESH_MAX = 1000000;
+// Recipricol used to as pixel update probability
+const float HOFSub::UPDATE_MIN = 2;
+const float HOFSub::UPDATE_MAX = 200;
+const float HOFSub::THRESH_INC_RATE = 0.05;
+const float HOFSub::THRESH_DEC_RATE = 0.05;
+const float HOFSub::UPDATE_INC_RATE = 1.00;
+const float HOFSub::UPDATE_DEC_RATE = 0.05;
+
 HOFSub::HOFSub(
         const int rows,
         const int cols,

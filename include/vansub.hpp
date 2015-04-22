@@ -28,8 +28,8 @@ public:
     void write(cv::FileStorage &fs) const;
 
 private:
-    const static int req_matches = 2;
-    const static int max_colors = 256;
+    static const int req_matches = 2;
+    static const int max_colors = 256;
 
     int rows;
     int cols;

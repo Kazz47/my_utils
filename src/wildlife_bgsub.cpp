@@ -13,24 +13,11 @@
 #include "bsub.hpp"
 #include "vansub.hpp"
 #include "hofsub.hpp"
-#include "boinc_utils.hpp"
+#include "boinc_utils.hpp" //Includes BOINC headers
 
 //Defines
 //#define GUI
 
-//BOINC
-#ifdef _BOINC_APP_
-#ifdef _WIN32
-#include "boinc_win.h"
-#include "str_util.h"
-#endif
-
-#include "boinc/diagnostics.h"
-#include "boinc/util.h"
-#include "boinc/filesys.h"
-#include "boinc/boinc_api.h"
-#include "boinc/mfile.h"
-#endif
 
 /** Staic Vars **/
 static const double ALPHA = 0.1;

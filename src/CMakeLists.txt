@@ -59,12 +59,6 @@ set(EVENT_DB_UPLOADER_SOURCES
     event_db_uploader
 )
 
-if(BOINC_FOUND)
-    include_directories(${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS} ${BOINC_INCLUDE_DIR})
-else(BOINC_FOUND)
-    include_directories(${INCLUDE_DIRS} ${GLOG_INCLUDE_DIRS})
-endif(BOINC_FOUND)
-
 add_library(vcrop_static STATIC ${VCROP_SOURCES})
 #add_library(vcrop_shared SHARED ${VCROP_SOURCES})
 
@@ -102,8 +96,8 @@ target_link_libraries(video_splitter vcrop_static ${GLOG_LIBRARIES} ${OpenCV_LIB
 target_link_libraries(wildlife_video_splitter vcrop_static ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(background_subtract bsub_static kosub_static vansub_static ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(wildlife_bgsub bsub_static vansub_static hofsub_static ${GLOG_LIBRARIES} ${OpenCV_LIBS} ${BOINC_LIBRARIES})
-target_link_libraries(event_data_parser ${GLOG_LIBRARIES} pthread ${Boost_LIBRARIES})
-target_link_libraries(event_db_uploader ${GLOG_LIBRARIES} pthread ${MYSQL_LIBRARIES})
+target_link_libraries(event_data_parser ${GLOG_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${Boost_LIBRARIES})
+target_link_libraries(event_db_uploader ${GLOG_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${MYSQL_LIBRARIES})
 target_link_libraries(blob_count ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(image_crop ${GLOG_LIBRARIES} ${OpenCV_LIBS})
 target_link_libraries(fractal ${GLOG_LIBRARIES} ${OpenCV_LIBS})

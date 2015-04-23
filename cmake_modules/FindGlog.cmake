@@ -4,7 +4,7 @@
 # The following variables are optionally searched for defaults
 #  GLOG_ROOT_DIR:            Base directory where all GLOG components are found
 #
-# The following are set after configuration is done: 
+# The following are set after configuration is done:
 #  GLOG_FOUND
 #  GLOG_INCLUDE_DIRS
 #  GLOG_LIBRARIES
@@ -23,11 +23,11 @@ else()
 endif()
 
 if(MSVC)
-    find_library(GLOG_LIBRARY_RELEASE libglog_static
+    find_library(GLOG_LIBRARY_RELEASE libglog
         PATHS ${GLOG_ROOT_DIR}
         PATH_SUFFIXES Release)
 
-    find_library(GLOG_LIBRARY_DEBUG libglog_static
+    find_library(GLOG_LIBRARY_DEBUG libglog
         PATHS ${GLOG_ROOT_DIR}
         PATH_SUFFIXES Debug)
 
@@ -46,4 +46,6 @@ find_package_handle_standard_args(GLOG DEFAULT_MSG
 if(GLOG_FOUND)
     set(GLOG_INCLUDE_DIRS ${GLOG_INCLUDE_DIR})
     set(GLOG_LIBRARIES ${GLOG_LIBRARY})
-endif()
+else(GLOG_FOUND)
+    message(FATAL_ERROR "Unable to find GLOG library")
+endif(GLOG_FOUND)

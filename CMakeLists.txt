@@ -37,6 +37,7 @@ endif(APPLE)
 
 if(MSVC)
     set(OM_USE_LIBCMT 1) #Look for Windows lib names
+    set(GLOG_ROOT_DIR "$ENV{HOMEPATH}/repos/glog")
     set(BOOST_ROOT "$ENV{HOMEPATH}/boost/boost_1_58_0")
     set(OpenCV_DIR "$ENV{HOMEPATH}/installs")
 endif(MSVC)
@@ -60,6 +61,7 @@ set(Boost_USE_MULTITHREADED OFF)
 set(OpenCV_STATIC ON)
 
 # Find Packages
+find_package(Threads REQUIRED)
 find_package(MySQL REQUIRED)
 find_package(Glog REQUIRED)
 if(MSVC)
@@ -70,6 +72,10 @@ endif(MSVC)
 find_package(OpenCV REQUIRED COMPONENTS videostab)
 find_package(BOINC REQUIRED)
 
+if(GLOG_FOUND)
+    include_directories(${GLOG_INCLUDE_DIRS})
+endif(GLOG_FOUND)
+
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 endif(Boost_FOUND)
@@ -79,17 +85,14 @@ if(OpenCV_FOUND)
 endif(OpenCV_FOUND)
 
 if(BOINC_FOUND)
-    message(STATUS "Found BOINC:  ${BOINC_INCLUDE_DIR}")
+    include_directories(${BOINC_INCLUDE_DIRS})
 endif(BOINC_FOUND)
+
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-set(INCLUDE_DIRS
-    ${PROJECT_SOURCE_DIR}/include
-)
-
 
 # Sources
 add_subdirectory(src)

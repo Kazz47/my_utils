@@ -7,7 +7,9 @@
 //C++
 #include <iostream>
 #include <stdexcept>
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 
 //BOINC
 #ifdef _BOINC_APP_
